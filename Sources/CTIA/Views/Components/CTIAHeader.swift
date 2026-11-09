@@ -2,22 +2,23 @@ import SwiftUI
 
 // MARK: - Cabeçalho Oficial CTIA / UFSM
 // Regra do Design System: Azul UFSM #21376B, brasão e filete dourado de 2 pt #CC8F00
+// Função padrão das 3 barras laterais (ao lado do filtro): Voltar para a tela inicial
 public struct CTIAHeader: View {
     @Binding var searchText: String
-    var onMenuTap: () -> Void = {}
+    var onHomeTap: () -> Void = {}
     var onAITap: () -> Void = {}
     var onFilterTap: (() -> Void)? = nil
     var showFilterActive: Bool = false
     
     public init(
         searchText: Binding<String>,
-        onMenuTap: @escaping () -> Void = {},
+        onHomeTap: @escaping () -> Void = {},
         onAITap: @escaping () -> Void = {},
         onFilterTap: (() -> Void)? = nil,
         showFilterActive: Bool = false
     ) {
         self._searchText = searchText
-        self.onMenuTap = onMenuTap
+        self.onHomeTap = onHomeTap
         self.onAITap = onAITap
         self.onFilterTap = onFilterTap
         self.showFilterActive = showFilterActive
@@ -55,15 +56,18 @@ public struct CTIAHeader: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
                 
-                // Barra de Ações: Menu + Campo de Busca + Busca IA
+                // Barra de Ações: 3 Barras (Volta ao Início) + Filtro + Campo de Busca + Busca IA
                 HStack(spacing: 8) {
-                    Button(action: onMenuTap) {
+                    // Botão 3 Barras Laterais - Volta para a Tela Inicial por padrão
+                    Button(action: onHomeTap) {
                         Image(systemName: "line.3.horizontal")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
                     }
+                    .accessibilityLabel("Voltar para o início")
                     
+                    // Botão de Filtro (Funil)
                     if let onFilterTap = onFilterTap {
                         Button(action: onFilterTap) {
                             ZStack {
@@ -75,8 +79,10 @@ public struct CTIAHeader: View {
                                     .foregroundColor(showFilterActive ? Color.azulUFSM : .white)
                             }
                         }
+                        .accessibilityLabel("Filtros de busca")
                     }
                     
+                    // Campo de Busca
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 13))
@@ -99,6 +105,7 @@ public struct CTIAHeader: View {
                     .background(Color.white)
                     .cornerRadius(10)
                     
+                    // Botão Busca IA
                     Button(action: onAITap) {
                         HStack(spacing: 4) {
                             Image(systemName: "wand.and.stars")

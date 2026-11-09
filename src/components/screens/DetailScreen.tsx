@@ -31,6 +31,7 @@ export const DetailScreen: React.FC<DetailScreenProps> = ({ item, onNavigate }) 
       <Header
         searchText=""
         onSearchChange={() => {}}
+        onHomeClick={() => onNavigate('inicio')}
         onSearchClick={() => onNavigate('busca')}
         onAIClick={() => onNavigate('busca')}
       />

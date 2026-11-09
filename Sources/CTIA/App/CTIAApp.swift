@@ -37,12 +37,16 @@ public struct MainContainerView: View {
                         onSelectItem: { item in
                             selectedItem = item
                             currentScreen = .visualizacao
+                        },
+                        onGoHome: {
+                            currentScreen = .inicio
                         }
                     )
                 case .visualizacao:
                     DetailView(
                         item: selectedItem,
-                        onBack: { currentScreen = .buscaFiltros }
+                        onBack: { currentScreen = .buscaFiltros },
+                        onGoHome: { currentScreen = .inicio }
                     )
                 case .cadastro:
                     CreateItemView(
@@ -51,7 +55,8 @@ public struct MainContainerView: View {
                             academicItems.insert(newItem, at: 0)
                             selectedItem = newItem
                             currentScreen = .visualizacao
-                        }
+                        },
+                        onGoHome: { currentScreen = .inicio }
                     )
                 }
             }

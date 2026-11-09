@@ -270,7 +270,7 @@ struct AcademicItem: Identifiable, Hashable {
 
 struct CTIAHeader: View {
     @Binding var searchText: String
-    var onMenuTap: () -> Void = {}
+    var onHomeTap: () -> Void = {} // Função padrão das 3 barras: voltar para a tela inicial
     var onAITap: () -> Void = {}
     var onFilterTap: (() -> Void)? = nil
     var showFilterActive: Bool = false
@@ -307,14 +307,16 @@ struct CTIAHeader: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
                 
-                // Barra de Ações: Menu + Campo de Busca + Busca IA
+                // Barra de Ações: 3 Barras (Volta ao Início) + Filtro + Campo de Busca + Busca IA
                 HStack(spacing: 8) {
-                    Button(action: onMenuTap) {
+                    // Botão 3 barras laterais: volta para a tela inicial por padrão
+                    Button(action: onHomeTap) {
                         Image(systemName: "line.3.horizontal")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
                     }
+                    .accessibilityLabel("Voltar para o início")
                     
                     if let onFilterTap = onFilterTap {
                         Button(action: onFilterTap) {
@@ -518,6 +520,7 @@ struct SearchFilterView: View {
         VStack(spacing: 0) {
             CTIAHeader(
                 searchText: $searchText,
+                onHomeTap: { currentScreen = .inicio },
                 onFilterTap: {
                     withAnimation { isFilterPanelExpanded.toggle() }
                 },
@@ -702,7 +705,7 @@ struct DetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            CTIAHeader(searchText: .constant(""))
+            CTIAHeader(searchText: .constant(""), onHomeTap: { currentScreen = .inicio })
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
@@ -853,7 +856,7 @@ struct CreateItemView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            CTIAHeader(searchText: .constant(""))
+            CTIAHeader(searchText: .constant(""), onHomeTap: { currentScreen = .inicio })
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {

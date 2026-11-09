@@ -36,6 +36,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onSearch }) 
       <Header
         searchText={searchText}
         onSearchChange={setSearchText}
+        onHomeClick={() => onNavigate('inicio')}
         onSearchClick={() => onNavigate('busca')}
         onAIClick={() => onNavigate('busca')}
       />

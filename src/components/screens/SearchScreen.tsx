@@ -83,6 +83,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
       <Header
         searchText={searchText}
         onSearchChange={setSearchText}
+        onHomeClick={() => onNavigate('inicio')}
         onFilterToggle={() => setIsFilterOpen(!isFilterOpen)}
         isFilterActive={isFilterOpen}
         onAIClick={() => {}}

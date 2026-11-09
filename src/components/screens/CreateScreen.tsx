@@ -84,6 +84,7 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
       <Header
         searchText=""
         onSearchChange={() => {}}
+        onHomeClick={() => onNavigate('inicio')}
         onSearchClick={() => onNavigate('busca')}
         onAIClick={() => onNavigate('busca')}
       />

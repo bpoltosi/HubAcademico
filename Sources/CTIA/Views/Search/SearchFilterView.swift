@@ -34,9 +34,14 @@ public struct SearchFilterView: View {
     // Resultados
     @State private var items: [AcademicItem] = AcademicItem.mockList
     public var onSelectItem: (AcademicItem) -> Void
+    public var onGoHome: () -> Void
     
-    public init(onSelectItem: @escaping (AcademicItem) -> Void = { _ in }) {
+    public init(
+        onSelectItem: @escaping (AcademicItem) -> Void = { _ in },
+        onGoHome: @escaping () -> Void = {}
+    ) {
         self.onSelectItem = onSelectItem
+        self.onGoHome = onGoHome
     }
     
     private var activeFilterCount: Int {
@@ -63,10 +68,10 @@ public struct SearchFilterView: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            // Cabeçalho UFSM com busca ativa
+            // Cabeçalho UFSM com busca ativa e botão das 3 barras voltando ao Início
             CTIAHeader(
                 searchText: $searchText,
-                onMenuTap: {},
+                onHomeTap: onGoHome,
                 onAITap: {},
                 onFilterTap: {
                     withAnimation(.easeInOut(duration: 0.2)) {

@@ -11,17 +11,24 @@ public struct DetailView: View {
     @State private var userRating: Int = 0
     @State private var isSaved: Bool = true
     public var onBack: () -> Void
+    public var onGoHome: () -> Void
     
-    public init(item: AcademicItem = AcademicItem.mockNoiseMonitor, onBack: @escaping () -> Void = {}) {
+    public init(
+        item: AcademicItem = AcademicItem.mockNoiseMonitor,
+        onBack: @escaping () -> Void = {},
+        onGoHome: @escaping () -> Void = {}
+    ) {
         self._item = State(initialValue: item)
         self.onBack = onBack
+        self.onGoHome = onGoHome
     }
     
     public var body: some View {
         VStack(spacing: 0) {
+            // Cabeçalho UFSM com as 3 barras retornando ao Início por padrão
             CTIAHeader(
                 searchText: .constant(""),
-                onMenuTap: {},
+                onHomeTap: onGoHome,
                 onAITap: {}
             )
             

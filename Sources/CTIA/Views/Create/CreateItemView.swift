@@ -24,13 +24,16 @@ public struct CreateItemView: View {
     
     public var onBack: () -> Void
     public var onPublishSuccess: (AcademicItem) -> Void
+    public var onGoHome: () -> Void
     
     public init(
         onBack: @escaping () -> Void = {},
-        onPublishSuccess: @escaping (AcademicItem) -> Void = { _ in }
+        onPublishSuccess: @escaping (AcademicItem) -> Void = { _ in },
+        onGoHome: @escaping () -> Void = {}
     ) {
         self.onBack = onBack
         self.onPublishSuccess = onPublishSuccess
+        self.onGoHome = onGoHome
     }
     
     private var charCount: Int {
@@ -74,9 +77,10 @@ public struct CreateItemView: View {
     
     public var body: some View {
         VStack(spacing: 0) {
+            // Cabeçalho UFSM com botão das 3 barras retornando à tela inicial
             CTIAHeader(
                 searchText: .constant(""),
-                onMenuTap: {},
+                onHomeTap: onGoHome,
                 onAITap: {}
             )
             

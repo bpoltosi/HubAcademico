@@ -4,6 +4,7 @@ import { Menu, Search, Wand2, Filter, X } from 'lucide-react';
 interface HeaderProps {
   searchText: string;
   onSearchChange: (text: string) => void;
+  onHomeClick?: () => void;
   onFilterToggle?: () => void;
   isFilterActive?: boolean;
   onSearchClick?: () => void;
@@ -13,6 +14,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   searchText,
   onSearchChange,
+  onHomeClick,
   onFilterToggle,
   isFilterActive = false,
   onSearchClick,
@@ -50,11 +52,13 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Linha de Busca & Ações */}
         <div className="flex items-center space-x-2">
-          {/* Menu Hambúrguer */}
+          {/* Menu Hambúrguer (3 Barras Laterais) - Volta para a Tela Inicial */}
           <button
             type="button"
-            aria-label="Menu principal"
-            className="w-9 h-9 flex items-center justify-center rounded text-white hover:bg-white/10 active:bg-white/20 transition-colors"
+            aria-label="Voltar para a tela inicial"
+            title="Voltar para a tela inicial"
+            onClick={onHomeClick}
+            className="w-9 h-9 flex items-center justify-center rounded text-white hover:bg-white/10 active:bg-white/20 transition-colors cursor-pointer"
           >
             <Menu className="w-5 h-5" />
           </button>

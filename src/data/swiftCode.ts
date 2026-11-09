@@ -201,6 +201,7 @@ struct AcademicItem: Identifiable, Hashable {
 // MARK: - 3. CABEÇALHO OFICIAL (COM BRASÃO E FILETE DOURADO DE 2 PT)
 struct CTIAHeader: View {
     @Binding var searchText: String
+    var onHomeTap: () -> Void = {} // Volta para a tela inicial por padrão
     var onFilterTap: (() -> Void)? = nil
     var showFilterActive: Bool = false
     
@@ -225,7 +226,11 @@ struct CTIAHeader: View {
                 .padding(.top, 4)
                 
                 HStack(spacing: 8) {
-                    Image(systemName: "line.3.horizontal").foregroundColor(.white).frame(width: 36, height: 36)
+                    // Botão 3 barras laterais: retorna à tela inicial
+                    Button(action: onHomeTap) {
+                        Image(systemName: "line.3.horizontal").foregroundColor(.white).frame(width: 36, height: 36)
+                    }
+                    .accessibilityLabel("Voltar para o início")
                     
                     if let onFilterTap = onFilterTap {
                         Button(action: onFilterTap) {
@@ -467,11 +472,13 @@ public struct SearchFilterView: View {
     
     @State private var items: [AcademicItem] = AcademicItem.mockList
     public var onSelectItem: (AcademicItem) -> Void
+    public var onGoHome: () -> Void = {}
     
     public var body: some View {
         VStack(spacing: 0) {
             CTIAHeader(
                 searchText: $searchText,
+                onHomeTap: onGoHome,
                 onFilterTap: { withAnimation { isFilterPanelExpanded.toggle() } },
                 showFilterActive: isFilterPanelExpanded
             )
@@ -623,10 +630,11 @@ public struct DetailView: View {
     @State private var userRating: Int = 0
     @State private var isSaved: Bool = true
     public var onBack: () -> Void
+    public var onGoHome: () -> Void = {}
     
     public var body: some View {
         VStack(spacing: 0) {
-            CTIAHeader(searchText: .constant(""))
+            CTIAHeader(searchText: .constant(""), onHomeTap: onGoHome)
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
@@ -700,10 +708,11 @@ public struct CreateItemView: View {
     @State private var selectedArea: String = "Engenharias"
     @State private var selectedMateria: String = "Higiene Ocupacional"
     public var onBack: () -> Void
+    public var onGoHome: () -> Void = {}
     
     public var body: some View {
         VStack(spacing: 0) {
-            CTIAHeader(searchText: .constant(""))
+            CTIAHeader(searchText: .constant(""), onHomeTap: onGoHome)
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
