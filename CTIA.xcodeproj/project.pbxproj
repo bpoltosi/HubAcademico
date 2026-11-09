@@ -1,0 +1,395 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA0000200000000000000001 /* CTIAApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000001 /* CTIAApp.swift */; };
+		AA0000200000000000000002 /* AcademicCatalogLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000002 /* AcademicCatalogLogic.swift */; };
+		AA0000200000000000000003 /* AcademicItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000003 /* AcademicItem.swift */; };
+		AA0000200000000000000004 /* AcademicType.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000004 /* AcademicType.swift */; };
+		AA0000200000000000000005 /* MockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000005 /* MockData.swift */; };
+		AA0000200000000000000006 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000006 /* Colors.swift */; };
+		AA0000200000000000000007 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000007 /* DesignSystem.swift */; };
+		AA0000200000000000000008 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000008 /* Typography.swift */; };
+		AA0000200000000000000009 /* CTIACheckbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000009 /* CTIACheckbox.swift */; };
+		AA000020000000000000000a /* CTIAHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000010000000000000000a /* CTIAHeader.swift */; };
+		AA000020000000000000000b /* SectionTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000010000000000000000b /* SectionTitleView.swift */; };
+		AA000020000000000000000c /* StarRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000010000000000000000c /* StarRatingView.swift */; };
+		AA000020000000000000000d /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000010000000000000000d /* HomeView.swift */; };
+		AA000020000000000000000e /* SearchFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000010000000000000000e /* SearchFilterView.swift */; };
+		AA000020000000000000000f /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000010000000000000000f /* DetailView.swift */; };
+		AA0000200000000000000010 /* CreateItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000010 /* CreateItemView.swift */; };
+		AA0000300000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000300000000000000001 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA0000040000000000000001 /* CTIA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CTIA.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000300000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = CTIA/Assets.xcassets; sourceTree = "<group>"; };
+		AA0000400000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = CTIA/Info.plist; sourceTree = "<group>"; };
+		AA0000100000000000000001 /* CTIAApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/App/CTIAApp.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000002 /* AcademicCatalogLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Logic/AcademicCatalogLogic.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000003 /* AcademicItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Models/AcademicItem.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000004 /* AcademicType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Models/AcademicType.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000005 /* MockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Models/MockData.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000006 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Theme/Colors.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000007 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Theme/DesignSystem.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000008 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Theme/Typography.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000009 /* CTIACheckbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Components/CTIACheckbox.swift"; sourceTree = "<group>"; };
+		AA000010000000000000000a /* CTIAHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Components/CTIAHeader.swift"; sourceTree = "<group>"; };
+		AA000010000000000000000b /* SectionTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Components/SectionTitleView.swift"; sourceTree = "<group>"; };
+		AA000010000000000000000c /* StarRatingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Components/StarRatingView.swift"; sourceTree = "<group>"; };
+		AA000010000000000000000d /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Home/HomeView.swift"; sourceTree = "<group>"; };
+		AA000010000000000000000e /* SearchFilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Search/SearchFilterView.swift"; sourceTree = "<group>"; };
+		AA000010000000000000000f /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Detail/DetailView.swift"; sourceTree = "<group>"; };
+		AA0000100000000000000010 /* CreateItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/CTIA/Views/Create/CreateItemView.swift"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA0000070000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA0000020000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				AA00000B0000000000000001 /* Sources */,
+				AA00000C0000000000000001 /* Resources & Config */,
+				AA00000A0000000000000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA00000B0000000000000001 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000100000000000000001 /* CTIAApp.swift */,
+				AA0000100000000000000002 /* AcademicCatalogLogic.swift */,
+				AA0000100000000000000003 /* AcademicItem.swift */,
+				AA0000100000000000000004 /* AcademicType.swift */,
+				AA0000100000000000000005 /* MockData.swift */,
+				AA0000100000000000000006 /* Colors.swift */,
+				AA0000100000000000000007 /* DesignSystem.swift */,
+				AA0000100000000000000008 /* Typography.swift */,
+				AA0000100000000000000009 /* CTIACheckbox.swift */,
+				AA000010000000000000000a /* CTIAHeader.swift */,
+				AA000010000000000000000b /* SectionTitleView.swift */,
+				AA000010000000000000000c /* StarRatingView.swift */,
+				AA000010000000000000000d /* HomeView.swift */,
+				AA000010000000000000000e /* SearchFilterView.swift */,
+				AA000010000000000000000f /* DetailView.swift */,
+				AA0000100000000000000010 /* CreateItemView.swift */,
+			);
+			name = Sources;
+			sourceTree = "<group>";
+		};
+		AA00000C0000000000000001 /* Resources & Config */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000300000000000000001 /* Assets.xcassets */,
+				AA0000400000000000000001 /* Info.plist */,
+			);
+			name = "Resources & Config";
+			sourceTree = "<group>";
+		};
+		AA00000A0000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000040000000000000001 /* CTIA.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA0000030000000000000001 /* CTIA */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000090000000000000001 /* Build configuration list for PBXNativeTarget "CTIA" */;
+			buildPhases = (
+				AA0000050000000000000001 /* Sources */,
+				AA0000070000000000000001 /* Frameworks */,
+				AA0000060000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CTIA;
+			productName = CTIA;
+			productReference = AA0000040000000000000001 /* CTIA.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA0000010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AA0000030000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AA0000080000000000000001 /* Build configuration list for PBXProject "CTIA" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "pt-BR";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				"pt-BR",
+				Base,
+			);
+			mainGroup = AA0000020000000000000001;
+			productRefGroup = AA00000A0000000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA0000030000000000000001 /* CTIA */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA0000060000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000300000000000000002 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA0000050000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000200000000000000001 /* CTIAApp.swift in Sources */,
+				AA0000200000000000000002 /* AcademicCatalogLogic.swift in Sources */,
+				AA0000200000000000000003 /* AcademicItem.swift in Sources */,
+				AA0000200000000000000004 /* AcademicType.swift in Sources */,
+				AA0000200000000000000005 /* MockData.swift in Sources */,
+				AA0000200000000000000006 /* Colors.swift in Sources */,
+				AA0000200000000000000007 /* DesignSystem.swift in Sources */,
+				AA0000200000000000000008 /* Typography.swift in Sources */,
+				AA0000200000000000000009 /* CTIACheckbox.swift in Sources */,
+				AA000020000000000000000a /* CTIAHeader.swift in Sources */,
+				AA000020000000000000000b /* SectionTitleView.swift in Sources */,
+				AA000020000000000000000c /* StarRatingView.swift in Sources */,
+				AA000020000000000000000d /* HomeView.swift in Sources */,
+				AA000020000000000000000e /* SearchFilterView.swift in Sources */,
+				AA000020000000000000000f /* DetailView.swift in Sources */,
+				AA0000200000000000000010 /* CreateItemView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA0000080000000000000002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDEFINED_VARIABLES = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA0000080000000000000003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDEFINED_VARIABLES = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AA0000090000000000000002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CTIA/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CTIA;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = br.ufsm.ctism.ctia;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA0000090000000000000003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CTIA/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CTIA;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = br.ufsm.ctism.ctia;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA0000080000000000000001 /* Build configuration list for PBXProject "CTIA" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000080000000000000002 /* Debug */,
+				AA0000080000000000000003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000090000000000000001 /* Build configuration list for PBXNativeTarget "CTIA" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000090000000000000002 /* Debug */,
+				AA0000090000000000000003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = AA0000010000000000000001 /* Project object */;
+}

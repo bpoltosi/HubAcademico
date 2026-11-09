@@ -81,17 +81,31 @@ export const SwiftCodeViewer: React.FC<SwiftCodeViewerProps> = ({
     try {
       setIsZipping(true);
       const zip = new JSZip();
-      const folder = zip.folder('CTIA-Swift-SPM');
+      const folder = zip.folder('CTIA-Xcode-Project');
 
       SWIFT_FILES.forEach((f) => {
         folder?.file(f.relativePath, f.code);
       });
 
+      // Adiciona catálogo de ativos do Xcode (Assets.xcassets)
+      folder?.file(
+        'CTIA/Assets.xcassets/Contents.json',
+        '{\n  "info" : {\n    "author" : "xcode",\n    "version" : 1\n  }\n}'
+      );
+      folder?.file(
+        'CTIA/Assets.xcassets/AppIcon.appiconset/Contents.json',
+        '{\n  "images" : [\n    {\n      "idiom" : "universal",\n      "platform" : "ios",\n      "size" : "1024x1024"\n    }\n  ],\n  "info" : {\n    "author" : "xcode",\n    "version" : 1\n  }\n}'
+      );
+      folder?.file(
+        'CTIA/Assets.xcassets/AccentColor.colorset/Contents.json',
+        '{\n  "colors" : [\n    {\n      "color" : {\n        "color-space" : "srgb",\n        "components" : {\n          "alpha" : "1.000",\n          "blue" : "0.420",\n          "green" : "0.216",\n          "red" : "0.129"\n        }\n      },\n      "idiom" : "universal"\n    }\n  ],\n  "info" : {\n    "author" : "xcode",\n    "version" : 1\n  }\n}'
+      );
+
       const content = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'CTIA-Swift-SPM-Project.zip';
+      link.download = 'CTIA-Xcode-Project.zip';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -127,14 +141,14 @@ export const SwiftCodeViewer: React.FC<SwiftCodeViewerProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-bold text-sm text-white">
-                Repositório Nativo em Swift (SwiftUI)
+                Projeto Nativo iOS / Xcode (SwiftUI)
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-[#CC8F00]/20 text-[#FFC107] border border-[#CC8F00]/40">
-                19 Arquivos .swift · 100% Nativo
+                Pronto para Build & Run (Cmd + R)
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Arquitetura modular SPM (Swift Package Manager) + Arquivo consolidado pronto para Xcode
+              CTIA.xcodeproj + Scheme compartilhado + Scripts para abrir direto no Simulador iPhone
             </p>
           </div>
         </div>
@@ -276,10 +290,12 @@ export const SwiftCodeViewer: React.FC<SwiftCodeViewerProps> = ({
           <div className="p-3 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400 space-y-1">
             <div className="flex items-center space-x-1.5 text-slate-300 font-semibold">
               <Terminal className="w-3.5 h-3.5 text-[#CC8F00]" />
-              <span>Como rodar no Xcode</span>
+              <span>Build & Run no Simulador</span>
             </div>
             <p className="text-[10px] leading-relaxed text-slate-400">
-              Cole <code>CTIA_Combined.swift</code> no seu <code>ContentView.swift</code> ou abra a pasta do pacote com <code>Package.swift</code>.
+              1. Abra <code>CTIA.xcodeproj</code> e aperte <code>Cmd + R</code>.<br />
+              2. Ou dê duplo clique em <code>RunInSimulator.command</code>.<br />
+              3. O app instala e abre direto no iPhone!
             </p>
           </div>
         </div>
