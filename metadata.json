@@ -1,0 +1,6 @@
+{
+  "name": "CTIA · Repositório Acadêmico do CTISM",
+  "description": "Frontend completo em Swift (SwiftUI) para o repositório acadêmico do CTISM/UFSM com simulador interativo das 4 telas e design system oficial.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
