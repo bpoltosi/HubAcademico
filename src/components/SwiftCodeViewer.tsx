@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { SWIFT_FILES, SwiftFile } from '../data/swiftCode';
-import { Copy, Check, Download, FileCode, Apple, Terminal } from 'lucide-react';
+import { Copy, Check, Download, FileCode, Apple, Terminal, Archive, FolderTree } from 'lucide-react';
+import JSZip from 'jszip';
 
 export const SwiftCodeViewer: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<SwiftFile>(SWIFT_FILES[0]);
   const [copied, setCopied] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(selectedFile.code);
@@ -22,6 +24,32 @@ export const SwiftCodeViewer: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadZip = async () => {
+    try {
+      setIsZipping(true);
+      const zip = new JSZip();
+      const folder = zip.folder('CTIA-Swift-Project');
+      
+      SWIFT_FILES.forEach((f) => {
+        folder?.file(f.relativePath, f.code);
+      });
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'CTIA-Swift-SPM-Project.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to generate zip:', err);
+    } finally {
+      setIsZipping(false);
+    }
   };
 
   return (
@@ -49,6 +77,16 @@ export const SwiftCodeViewer: React.FC = () => {
         <div className="flex items-center space-x-2">
           <button
             type="button"
+            onClick={handleDownloadZip}
+            disabled={isZipping}
+            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            <Archive className="w-3.5 h-3.5" />
+            <span>{isZipping ? 'Compactando...' : 'Baixar Projeto Xcode (.zip)'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleCopy}
             className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-medium rounded-lg flex items-center space-x-1.5 border border-slate-700 transition-all cursor-pointer"
           >
@@ -60,7 +98,7 @@ export const SwiftCodeViewer: React.FC = () => {
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5" />
-                <span>Copiar {selectedFile.filename}</span>
+                <span>Copiar Código</span>
               </>
             )}
           </button>
@@ -71,7 +109,7 @@ export const SwiftCodeViewer: React.FC = () => {
             className="px-3.5 py-1.5 bg-[#21376B] hover:bg-[#1a2d58] active:scale-95 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Baixar .swift</span>
+            <span>Baixar Este Arquivo</span>
           </button>
         </div>
       </div>
@@ -102,8 +140,8 @@ export const SwiftCodeViewer: React.FC = () => {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-mono">{file.filename}</div>
-                  <div className="text-[10px] text-slate-500 truncate mt-0.5">
-                    {file.category}
+                  <div className="text-[10px] text-slate-500 truncate mt-0.5 font-mono">
+                    {file.relativePath}
                   </div>
                 </div>
               </button>
