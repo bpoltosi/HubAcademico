@@ -20,6 +20,8 @@ Este repositório contém a implementação completa do frontend em **Swift (Swi
 │   └── CTIA/
 │       ├── App/
 │       │   └── CTIAApp.swift                    # Entry point @main e container de navegação
+│       ├── Logic/
+│       │   └── AcademicCatalogLogic.swift       # Validações (limite 200 chars), ordenação (8->22 e 3->16), filtros e rating BR
 │       ├── Theme/
 │       │   ├── Colors.swift                     # Tokens de cores de ufsm.br (#21376B, #204C90, #CC8F00, #FFC107)
 │       │   ├── Typography.swift                 # Escala tipográfica da fonte Rawline

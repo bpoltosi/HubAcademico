@@ -19,11 +19,23 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'interactive' | 'grid' | 'code' | 'tokens'>('interactive');
+  const [activeTab, setActiveTab] = useState<'code' | 'interactive' | 'grid' | 'tokens'>('code');
+  const [selectedSwiftFilename, setSelectedSwiftFilename] = useState<string>('CTIA_Combined.swift');
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('inicio');
   const [items, setItems] = useState<AcademicItem[]>(INITIAL_ITEMS);
   const [selectedItem, setSelectedItem] = useState<AcademicItem>(INITIAL_ITEMS[0]);
   const [searchQuery, setSearchQuery] = useState('ruído');
+
+  const openSwiftFileForScreen = (screen: ScreenId) => {
+    const fileMap: Record<ScreenId, string> = {
+      inicio: 'HomeView.swift',
+      busca: 'SearchFilterView.swift',
+      visualizacao: 'DetailView.swift',
+      cadastro: 'CreateItemView.swift',
+    };
+    setSelectedSwiftFilename(fileMap[screen]);
+    setActiveTab('code');
+  };
 
   const handleAddItem = (newItem: AcademicItem) => {
     setItems((prev) => [newItem, ...prev]);
@@ -98,6 +110,22 @@ export default function App() {
           <div className="flex items-center bg-slate-950/70 p-1 rounded-xl border border-slate-800/80">
             <button
               type="button"
+              onClick={() => setActiveTab('code')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer ${
+                activeTab === 'code'
+                  ? 'bg-[#21376B] text-white shadow-xs border border-[#CC8F00]/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Code2 className="w-3.5 h-3.5 text-[#FFC107]" />
+              <span>Código Swift (.swift)</span>
+              <span className="text-[10px] bg-[#CC8F00]/30 text-[#FFC107] px-1.5 py-0.2 rounded font-mono ml-1">
+                19
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab('interactive')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer ${
                 activeTab === 'interactive'
@@ -120,19 +148,6 @@ export default function App() {
             >
               <LayoutGrid className="w-3.5 h-3.5" />
               <span>4 Telas (Figma)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('code')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer ${
-                activeTab === 'code'
-                  ? 'bg-[#21376B] text-white shadow-xs'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Code2 className="w-3.5 h-3.5" />
-              <span>Código Swift (.swift)</span>
             </button>
 
             <button
@@ -278,14 +293,27 @@ export default function App() {
                   </li>
                 </ul>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('code')}
-                  className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-white rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer mt-2"
-                >
-                  <Code2 className="w-4 h-4 text-[#FFC107]" />
-                  <span>Ver e Copiar Código Swift para Xcode</span>
-                </button>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => openSwiftFileForScreen(currentScreen)}
+                    className="flex-1 py-2.5 bg-[#21376B] hover:bg-[#1a2d58] border border-[#CC8F00]/50 text-xs font-semibold text-white rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer shadow-md"
+                  >
+                    <Code2 className="w-4 h-4 text-[#FFC107]" />
+                    <span>Ver Swift Desta Tela</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSwiftFilename('CTIA_Combined.swift');
+                      setActiveTab('code');
+                    }}
+                    className="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 rounded-xl flex items-center justify-center space-x-1 transition-colors cursor-pointer"
+                    title="Ver projeto Swift unificado"
+                  >
+                    <span>Todos</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -306,49 +334,102 @@ export default function App() {
                   Visão simultânea das 4 telas do protótipo em escala idêntica ao painel do Figma
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setActiveTab('interactive')}
-                className="px-3.5 py-1.5 bg-[#21376B] text-white text-xs font-semibold rounded-lg hover:bg-[#1a2d58] transition-colors cursor-pointer"
-              >
-                Abrir Simulador Interativo
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSwiftFilename('CTIA_Combined.swift');
+                    setActiveTab('code');
+                  }}
+                  className="px-3.5 py-1.5 bg-slate-800 border border-slate-700 text-white text-xs font-semibold rounded-lg hover:bg-slate-700 transition-colors cursor-pointer flex items-center space-x-1"
+                >
+                  <Code2 className="w-3.5 h-3.5 text-[#FFC107]" />
+                  <span>Ver Código Swift</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('interactive')}
+                  className="px-3.5 py-1.5 bg-[#21376B] text-white text-xs font-semibold rounded-lg hover:bg-[#1a2d58] transition-colors cursor-pointer"
+                >
+                  Abrir Simulador Interativo
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start justify-items-center">
               {/* Tela 1: Início */}
-              <IPhoneFrame screenTitle="1. Início" badgeNumber={1} compact={true}>
-                <HomeScreen
-                  onNavigate={(screen) => setCurrentScreen(screen)}
-                  onSearch={(q) => setSearchQuery(q)}
-                />
-              </IPhoneFrame>
+              <div className="flex flex-col items-center space-y-2 w-full">
+                <IPhoneFrame screenTitle="1. Início" badgeNumber={1} compact={true}>
+                  <HomeScreen
+                    onNavigate={(screen) => setCurrentScreen(screen)}
+                    onSearch={(q) => setSearchQuery(q)}
+                  />
+                </IPhoneFrame>
+                <button
+                  type="button"
+                  onClick={() => openSwiftFileForScreen('inicio')}
+                  className="px-3 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-[#CC8F00]/50 rounded-lg text-[11px] font-mono text-slate-300 flex items-center space-x-1.5 transition-colors cursor-pointer"
+                >
+                  <Code2 className="w-3 h-3 text-[#FFC107]" />
+                  <span>HomeView.swift</span>
+                </button>
+              </div>
 
               {/* Tela 2: Busca e filtros */}
-              <IPhoneFrame screenTitle="2. Busca e filtros" badgeNumber={2} compact={true}>
-                <SearchScreen
-                  items={items}
-                  initialQuery="ruído"
-                  onSelectItem={(item) => setSelectedItem(item)}
-                  onNavigate={(screen) => setCurrentScreen(screen)}
-                />
-              </IPhoneFrame>
+              <div className="flex flex-col items-center space-y-2 w-full">
+                <IPhoneFrame screenTitle="2. Busca e filtros" badgeNumber={2} compact={true}>
+                  <SearchScreen
+                    items={items}
+                    initialQuery="ruído"
+                    onSelectItem={(item) => setSelectedItem(item)}
+                    onNavigate={(screen) => setCurrentScreen(screen)}
+                  />
+                </IPhoneFrame>
+                <button
+                  type="button"
+                  onClick={() => openSwiftFileForScreen('busca')}
+                  className="px-3 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-[#CC8F00]/50 rounded-lg text-[11px] font-mono text-slate-300 flex items-center space-x-1.5 transition-colors cursor-pointer"
+                >
+                  <Code2 className="w-3 h-3 text-[#FFC107]" />
+                  <span>SearchFilterView.swift</span>
+                </button>
+              </div>
 
               {/* Tela 3: Visualização */}
-              <IPhoneFrame screenTitle="3. Visualização" badgeNumber={3} compact={true}>
-                <DetailScreen
-                  item={selectedItem}
-                  onNavigate={(screen) => setCurrentScreen(screen)}
-                />
-              </IPhoneFrame>
+              <div className="flex flex-col items-center space-y-2 w-full">
+                <IPhoneFrame screenTitle="3. Visualização" badgeNumber={3} compact={true}>
+                  <DetailScreen
+                    item={selectedItem}
+                    onNavigate={(screen) => setCurrentScreen(screen)}
+                  />
+                </IPhoneFrame>
+                <button
+                  type="button"
+                  onClick={() => openSwiftFileForScreen('visualizacao')}
+                  className="px-3 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-[#CC8F00]/50 rounded-lg text-[11px] font-mono text-slate-300 flex items-center space-x-1.5 transition-colors cursor-pointer"
+                >
+                  <Code2 className="w-3 h-3 text-[#FFC107]" />
+                  <span>DetailView.swift</span>
+                </button>
+              </div>
 
               {/* Tela 4: Cadastro */}
-              <IPhoneFrame screenTitle="4. Cadastro" badgeNumber={4} compact={true}>
-                <CreateScreen
-                  onNavigate={(screen) => setCurrentScreen(screen)}
-                  onAddItem={handleAddItem}
-                />
-              </IPhoneFrame>
+              <div className="flex flex-col items-center space-y-2 w-full">
+                <IPhoneFrame screenTitle="4. Cadastro" badgeNumber={4} compact={true}>
+                  <CreateScreen
+                    onNavigate={(screen) => setCurrentScreen(screen)}
+                    onAddItem={handleAddItem}
+                  />
+                </IPhoneFrame>
+                <button
+                  type="button"
+                  onClick={() => openSwiftFileForScreen('cadastro')}
+                  className="px-3 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-[#CC8F00]/50 rounded-lg text-[11px] font-mono text-slate-300 flex items-center space-x-1.5 transition-colors cursor-pointer"
+                >
+                  <Code2 className="w-3 h-3 text-[#FFC107]" />
+                  <span>CreateItemView.swift</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -356,7 +437,13 @@ export default function App() {
         {/* MODO 3: VISUALIZADOR DE CÓDIGO SWIFT */}
         {activeTab === 'code' && (
           <div className="py-2">
-            <SwiftCodeViewer />
+            <SwiftCodeViewer
+              initialFile={selectedSwiftFilename}
+              onNavigateToPreview={(screen) => {
+                setCurrentScreen(screen);
+                setActiveTab('interactive');
+              }}
+            />
           </div>
         )}
 

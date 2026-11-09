@@ -20,7 +20,7 @@ extension Color {
     /// Azul secundário #204C90 (ícones e rótulos do menu)
     static let azulSecundario = Color(hex: "204C90")
     
-    /// Azul profundo #142140 (fundos de destaque)
+    /// Azul profundo #142140 (fundos de destaque e cartões IoT)
     static let azulProfundo = Color(hex: "142140")
     
     /// Dourado #CC8F00 (filete do cabeçalho de 2 pt, marcadores de seção)
@@ -58,7 +58,7 @@ extension Color {
     }
 }
 
-// Marcador de seção com filete dourado de 2-3 pt
+// Marcador de seção com filete dourado de 2-3 pt (| SEÇÃO)
 struct SectionTitleView: View {
     let title: String
     
@@ -77,7 +77,7 @@ struct SectionTitleView: View {
     }
 }
 
-// Checkbox com raio de 5 pt e ativo em azul UFSM
+// Checkbox com raio de 5 pt e ativo em azul UFSM #21376B (Bootstrap do site)
 struct CTIACheckbox: View {
     @Binding var isChecked: Bool
     let label: String
@@ -265,12 +265,101 @@ struct AcademicItem: Identifiable, Hashable {
 }
 
 // ==============================================================================
-// MARK: - 3. CABEÇALHO OFICIAL (COM BRASÃO E FILETE DOURADO DE 2 PT)
+// MARK: - 3. REGRAS DE NEGÓCIO E LÓGICA DE CATÁLOGO (AcademicCatalogLogic)
+// ==============================================================================
+
+struct SearchFilters: Hashable {
+    var termoBusca: String = ""
+    var ano: Int? = nil
+    var area: String? = nil
+    var autor: String? = nil
+    var curso: String? = nil
+    var titulo: String? = nil
+    var materia: String? = nil
+    var melhorAvaliacao: Bool = false
+}
+
+struct ValidationResult {
+    let isValid: Bool
+    let errors: [String: String]
+    let charCount: Int
+}
+
+enum AcademicCatalogLogic {
+    /// Regra: Verifica se os rótulos seguem ordem estritamente crescente de caracteres
+    static func verifyCharacterOrdering(_ labels: [String]) -> Bool {
+        guard labels.count > 1 else { return true }
+        for i in 0..<(labels.count - 1) {
+            if labels[i].count > labels[i + 1].count {
+                return false
+            }
+        }
+        return true
+    }
+    
+    /// Regra: Valida resumo limitado a até 200 caracteres e campos obrigatórios
+    static func validateAcademicItem(
+        titulo: String,
+        resumo: String,
+        area: String,
+        materia: String
+    ) -> ValidationResult {
+        var errors: [String: String] = [:]
+        let trimmedTitulo = titulo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedResumo = resumo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedArea = area.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedMateria = materia.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let charCount = resumo.count
+        
+        if trimmedTitulo.isEmpty { errors["titulo"] = "Título é obrigatório" }
+        if trimmedResumo.isEmpty {
+            errors["resumo"] = "Resumo é obrigatório"
+        } else if charCount > 200 {
+            errors["resumo"] = "Resumo excede o limite de 200 caracteres (\(charCount)/200)"
+        }
+        if trimmedArea.isEmpty || trimmedArea == "Todas as áreas" { errors["area"] = "Área é obrigatória" }
+        if trimmedMateria.isEmpty || trimmedMateria == "Todas as matérias" { errors["materia"] = "Matéria é obrigatória" }
+        
+        return ValidationResult(isValid: errors.isEmpty, errors: errors, charCount: charCount)
+    }
+    
+    /// Regra: Filtra itens acadêmicos conforme busca e critérios ativos
+    static func filterAcademicItems(items: [AcademicItem], filters: SearchFilters) -> [AcademicItem] {
+        return items.filter { item in
+            if !filters.termoBusca.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                let query = filters.termoBusca.lowercased()
+                let itemText = "\(item.titulo) \(item.resumo) \(item.autores) \(item.area) \(item.materia) \(item.curso)".lowercased()
+                if !itemText.contains(query) { return false }
+            }
+            if let ano = filters.ano, item.ano != ano { return false }
+            if let area = filters.area, !area.isEmpty, area != "Todas as áreas", item.area != area { return false }
+            if let autor = filters.autor, !autor.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if !item.autores.lowercased().contains(autor.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)) { return false }
+            }
+            if let curso = filters.curso, !curso.isEmpty, curso != "Todos os cursos", item.curso != curso { return false }
+            if let titulo = filters.titulo, !titulo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if !item.titulo.lowercased().contains(titulo.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)) { return false }
+            }
+            if let materia = filters.materia, !materia.isEmpty, materia != "Todas as matérias", item.materia != materia { return false }
+            if filters.melhorAvaliacao && item.avaliacao < 4.5 { return false }
+            return true
+        }
+    }
+    
+    /// Regra: Formatação decimal brasileira (ex: 4,8)
+    static func formatRatingBR(_ rating: Double) -> String {
+        return String(format: "%.1f", rating).replacingOccurrences(of: ".", with: ",")
+    }
+}
+
+// ==============================================================================
+// MARK: - 4. CABEÇALHO OFICIAL (COM BRASÃO E FILETE DOURADO DE 2 PT)
 // ==============================================================================
 
 struct CTIAHeader: View {
     @Binding var searchText: String
-    var onMenuTap: () -> Void = {}
+    var onHomeTap: () -> Void = {} // Função padrão das 3 barras: voltar para a tela inicial
     var onAITap: () -> Void = {}
     var onFilterTap: (() -> Void)? = nil
     var showFilterActive: Bool = false
@@ -307,14 +396,16 @@ struct CTIAHeader: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
                 
-                // Barra de Ações: Menu + Campo de Busca + Busca IA
+                // Barra de Ações: 3 Barras (Volta ao Início) + Filtro + Campo de Busca + Busca IA
                 HStack(spacing: 8) {
-                    Button(action: onMenuTap) {
+                    // Botão 3 barras laterais: volta para a tela inicial por padrão
+                    Button(action: onHomeTap) {
                         Image(systemName: "line.3.horizontal")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
                     }
+                    .accessibilityLabel("Voltar para o início")
                     
                     if let onFilterTap = onFilterTap {
                         Button(action: onFilterTap) {
@@ -370,7 +461,7 @@ struct CTIAHeader: View {
             }
             .background(Color.azulUFSM)
             
-            // Filete Dourado de 2 pt
+            // Filete Dourado de 2 pt obrigatório pelo Design System da UFSM
             Rectangle()
                 .fill(Color.douradoUFSM)
                 .frame(height: 2)
@@ -502,7 +593,7 @@ struct SearchFilterView: View {
     @State private var filtroAno = true
     @State private var filtroArea = true
     @State private var filtroAutor = false
-    @State private var filtroCurso = true
+    @State private var filtroCurso = false
     @State private var filtroTitulo = false
     @State private var filtroMateria = false
     @State private var filtroMelhorAvaliacao = true
@@ -518,6 +609,7 @@ struct SearchFilterView: View {
         VStack(spacing: 0) {
             CTIAHeader(
                 searchText: $searchText,
+                onHomeTap: { currentScreen = .inicio },
                 onFilterTap: {
                     withAnimation { isFilterPanelExpanded.toggle() }
                 },
@@ -617,7 +709,7 @@ struct SearchFilterView: View {
                     }
                     
                     HStack {
-                        Text("8 resultados para \"\(searchText)\"")
+                        Text("2 resultados para \"\(searchText)\"")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Color.textoSecundario)
                         Spacer()
@@ -702,7 +794,7 @@ struct DetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            CTIAHeader(searchText: .constant(""))
+            CTIAHeader(searchText: .constant(""), onHomeTap: { currentScreen = .inicio })
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
@@ -853,7 +945,7 @@ struct CreateItemView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            CTIAHeader(searchText: .constant(""))
+            CTIAHeader(searchText: .constant(""), onHomeTap: { currentScreen = .inicio })
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {

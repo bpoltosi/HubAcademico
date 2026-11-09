@@ -265,7 +265,96 @@ struct AcademicItem: Identifiable, Hashable {
 }
 
 // ==============================================================================
-// MARK: - 3. CABEÇALHO OFICIAL (COM BRASÃO E FILETE DOURADO DE 2 PT)
+// MARK: - 3. REGRAS DE NEGÓCIO E LÓGICA DE CATÁLOGO (AcademicCatalogLogic)
+// ==============================================================================
+
+struct SearchFilters: Hashable {
+    var termoBusca: String = ""
+    var ano: Int? = nil
+    var area: String? = nil
+    var autor: String? = nil
+    var curso: String? = nil
+    var titulo: String? = nil
+    var materia: String? = nil
+    var melhorAvaliacao: Bool = false
+}
+
+struct ValidationResult {
+    let isValid: Bool
+    let errors: [String: String]
+    let charCount: Int
+}
+
+enum AcademicCatalogLogic {
+    /// Regra: Verifica se os rótulos seguem ordem estritamente crescente de caracteres
+    static func verifyCharacterOrdering(_ labels: [String]) -> Bool {
+        guard labels.count > 1 else { return true }
+        for i in 0..<(labels.count - 1) {
+            if labels[i].count > labels[i + 1].count {
+                return false
+            }
+        }
+        return true
+    }
+    
+    /// Regra: Valida resumo limitado a até 200 caracteres e campos obrigatórios
+    static func validateAcademicItem(
+        titulo: String,
+        resumo: String,
+        area: String,
+        materia: String
+    ) -> ValidationResult {
+        var errors: [String: String] = [:]
+        let trimmedTitulo = titulo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedResumo = resumo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedArea = area.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedMateria = materia.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let charCount = resumo.count
+        
+        if trimmedTitulo.isEmpty { errors["titulo"] = "Título é obrigatório" }
+        if trimmedResumo.isEmpty {
+            errors["resumo"] = "Resumo é obrigatório"
+        } else if charCount > 200 {
+            errors["resumo"] = "Resumo excede o limite de 200 caracteres (\(charCount)/200)"
+        }
+        if trimmedArea.isEmpty || trimmedArea == "Todas as áreas" { errors["area"] = "Área é obrigatória" }
+        if trimmedMateria.isEmpty || trimmedMateria == "Todas as matérias" { errors["materia"] = "Matéria é obrigatória" }
+        
+        return ValidationResult(isValid: errors.isEmpty, errors: errors, charCount: charCount)
+    }
+    
+    /// Regra: Filtra itens acadêmicos conforme busca e critérios ativos
+    static func filterAcademicItems(items: [AcademicItem], filters: SearchFilters) -> [AcademicItem] {
+        return items.filter { item in
+            if !filters.termoBusca.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                let query = filters.termoBusca.lowercased()
+                let itemText = "\(item.titulo) \(item.resumo) \(item.autores) \(item.area) \(item.materia) \(item.curso)".lowercased()
+                if !itemText.contains(query) { return false }
+            }
+            if let ano = filters.ano, item.ano != ano { return false }
+            if let area = filters.area, !area.isEmpty, area != "Todas as áreas", item.area != area { return false }
+            if let autor = filters.autor, !autor.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if !item.autores.lowercased().contains(autor.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)) { return false }
+            }
+            if let curso = filters.curso, !curso.isEmpty, curso != "Todos os cursos", item.curso != curso { return false }
+            if let titulo = filters.titulo, !titulo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if !item.titulo.lowercased().contains(titulo.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)) { return false }
+            }
+            if let materia = filters.materia, !materia.isEmpty, materia != "Todas as matérias", item.materia != materia { return false }
+            if filters.melhorAvaliacao && item.avaliacao < 4.5 { return false }
+            return true
+        }
+    }
+    
+    /// Regra: Formatação decimal brasileira (ex: 4,8)
+    static func formatRatingBR(_ rating: Double) -> String {
+        return String(format: "%.1f", rating).replacingOccurrences(of: ".", with: ",")
+    }
+}
+
+// ==============================================================================
+// MARK: - 4. CABEÇALHO OFICIAL (COM BRASÃO E FILETE DOURADO DE 2 PT)
 // ==============================================================================
 
 struct CTIAHeader: View {
