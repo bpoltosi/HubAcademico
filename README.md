@@ -1,43 +1,8 @@
-# CTIA · Repositório Acadêmico do CTISM
+# AcadHub · Repositório Acadêmico Online
 ### Design System de ufsm.br · HackaTruck MakerSpace · Deploy 26.1
 **Frontend nativo desenvolvido em Swift (SwiftUI) para iOS 16.0+, 17.0+ e 18.0+**
 
 Este repositório contém a implementação completa do aplicativo acadêmico do CTISM/UFSM em **Swift nativo (SwiftUI)** pronto para compilar e rodar no Simulador iPhone do Xcode com 1 clique.
-
----
-
-## 🚀 Como Executar ("Build and Run") no Xcode e Simulador iPhone
-
-Ao clonar este repositório no seu Mac (`git clone <url>`), você tem 3 maneiras imediatas de rodar:
-
-### Opção 1: Projeto Xcode Completo (Recomendado — 1 Clique)
-1. Dê um duplo clique no arquivo **`CTIA.xcodeproj`** (ou execute no terminal: `open CTIA.xcodeproj`).
-2. O Xcode abrirá com o Scheme **`CTIA`** e um simulador (ex: **iPhone 16**) já selecionados.
-3. Pressione **`Cmd + R`** (ou clique no botão **Play / Run** no topo do Xcode).
-4. O Xcode compilará o app, abrirá o Simulador do iPhone e instalará o aplicativo **CTIA** automaticamente.
-
----
-
-### Opção 2: Automação por Terminal ou Finder (Build & Run Automático)
-Se preferir não abrir o Xcode manualmente:
-- **Pelo Finder**: Dê um duplo clique no arquivo executável **`RunInSimulator.command`**.
-- **Pelo Terminal**: Execute:
-  ```bash
-  ./run_simulator.sh
-  ```
-O script verifica o ambiente, inicializa o simulador do iPhone, compila o projeto nativo via `xcodebuild`, instala o pacote `CTIA.app` e abre a tela inicial do aplicativo no simulador.
-
----
-
-### Opção 3: Como Pacote SPM (Swift Package Manager)
-1. No Xcode: selecione **File > Open...** e selecione a pasta raiz do repositório (onde está o `Package.swift`).
-2. O Xcode resolverá automaticamente as dependências e o alvo `CTIA`.
-3. Pressione **`Cmd + U`** para executar todos os testes unitários do catálogo acadêmico (`AcademicModelsTests.swift`).
-
----
-
-### Opção 4: Arquivo Consolidado (Single File)
-Para prototipagem rápida ou playgrounds: copie o código do arquivo **`CTIA_Combined.swift`** e cole diretamente no arquivo `ContentView.swift` de qualquer projeto SwiftUI no Xcode.
 
 ---
 
