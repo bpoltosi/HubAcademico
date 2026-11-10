@@ -9,12 +9,32 @@ struct CabecalhoInstitucional: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
+                // Botão Voltar (seta + "Voltar") quando não estiver na raiz.
+                if !router.caminho.isEmpty {
+                    Button {
+                        router.voltarUmNivel()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 17, weight: .semibold))
+                            Text("Voltar")
+                                .font(Tipografia.fonteFixa(14.5, .medium))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .frame(height: 34)
+                        .background(Color.white.opacity(0.12), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Voltar")
+                }
+
                 SeloUFSM()
                 Rectangle()
                     .fill(Color.white.opacity(0.28))
                     .frame(width: 1, height: 34)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("CTIA")
+                    Text("Hub Acadêmico")
                         .font(Tipografia.fonteFixa(25, .medium))
                         .tracking(0.8)
                     Text("Repositório acadêmico do CTISM")
@@ -28,8 +48,9 @@ struct CabecalhoInstitucional: View {
             .frame(height: 52)
 
             HStack(spacing: 10) {
-                BotaoCabecalho(simbolo: "line.3.horizontal", rotuloAcessivel: "Menu") {
-                    router.mostrarMenu = true
+                // Botão ☰ agora volta ao início (não abre mais o menu).
+                BotaoCabecalho(simbolo: "line.3.horizontal", rotuloAcessivel: "Início") {
+                    router.voltarAoInicio()
                 }
                 if router.estaNaBusca {
                     BotaoFiltros()
@@ -227,3 +248,4 @@ struct BotaoBuscaIA: View {
         .accessibilityLabel(rotuloAcessivel)
     }
 }
+
