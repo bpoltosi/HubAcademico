@@ -740,36 +740,37 @@ def montar():
 
 
 # --------------------------------------------------------------------------- saídas
-def swift_catalogo():
+def swift_catalogo(por_sub):
     linhas = ['import Foundation', '',
-              '// Gerado por ferramentas/catalogo/gerar_catalogo.py a partir da tabela de áreas do conhecimento',
-              '// do CNPq enviada pela equipe. Não edite à mão: ajuste o script e rode-o de novo.',
-              '// As mesmas listas estão em backend/node-red/src/api.js (validação da subárea).', '',
+              '// Gerado por ferramentas/catalogo/gerar_catalogo.py a partir da tabela do CNPq',
+              '// e dos currículos da UFSM. Não edite à mão: ajuste os dados e rode-o de novo.',
+              '// Só entram subáreas com ao menos uma disciplina no catálogo atual da UFSM.', '',
               'extension AreaConhecimento {',
-              '    /// Grandes áreas na ordem da tabela do CNPq (a mesma da lista enviada).',
+              '    /// Grandes áreas na ordem da tabela do CNPq.',
               '    static let naOrdemDoCNPq: [AreaConhecimento] = [' + ', '.join('.' + a for a, _, _ in AREAS) + ']', '',
               '    /// Nome completo da grande área, como na tabela do CNPq.',
               '    var nomeCompleto: String {', '        switch self {']
     for area, nome, _ in AREAS:
         linhas.append(f'        case .{area}: "{nome}"')
     linhas += ['        }', '    }', '',
-               '    /// Subáreas da grande área, na ordem da tabela.',
+               '    /// Subáreas com disciplinas no catálogo da UFSM, na ordem da tabela do CNPq.',
                '    /// "Agronomia/Ciência do Solo" indica a subárea Ciência do Solo dentro de Agronomia.',
                '    var subareas: [String] {', '        switch self {']
     for area, _, subs in AREAS:
         linhas.append(f'        case .{area}:')
         linhas.append('            [')
-        for _, n in subs:
-            linhas.append(f'                "{n}",')
+        for codigo, nome in subs:
+            if por_sub.get(codigo):
+                linhas.append(f'                "{nome}",')
         linhas.append('            ]')
     linhas += ['        }', '    }', '}', '']
     return '\n'.join(linhas)
 
 
-def js_subareas():
+def js_subareas(por_sub):
     linhas = ['const SUBAREAS = {']
     for area, _, subs in AREAS:
-        nomes = ', '.join("'" + n + "'" for _, n in subs)
+        nomes = ', '.join("'" + nome + "'" for codigo, nome in subs if por_sub.get(codigo))
         linhas.append(f'    {area}: [{nomes}],')
     linhas.append('};')
     return '\n'.join(linhas)
@@ -779,20 +780,20 @@ def main():
     linhas, cursos, por_sub, motivos, total_subs = montar()
     vazias = [NOME[k] for k in NOME if not por_sub.get(k)]
     total = sum(len(v) for v in por_sub.values())
-    print(f'{len(linhas)} linhas · {len(cursos)} cursos · {total} matérias em {len(por_sub)} subáreas '
-          f'({total_subs} linhas na lista enviada) · sem matéria: {vazias}')
+    print(f'{len(linhas)} linhas · {len(cursos)} cursos · {total} matérias em {len(por_sub)} subáreas com oferta na UFSM '
+          f'({total_subs} subáreas na tabela do CNPq) · sem matéria: {vazias}')
     print('motivos:', dict(motivos))
 
     dados = {
         'fonte': 'Currículos dos cursos de graduação da UFSM (ufsm.br/cursos), consulta em 10/11/2026',
         'cursos': cursos,
-        'subareas': {NOME[k]: por_sub.get(k, []) for k in NOME},
+        'subareas': {NOME[k]: por_sub[k] for k in NOME if por_sub.get(k)},
     }
     recursos = REPO / 'HubAcademico' / 'Recursos'
     recursos.mkdir(parents=True, exist_ok=True)
     texto = json.dumps(dados, ensure_ascii=False, separators=(',', ':'))
     (recursos / 'materias-ufsm.json').write_text(texto + '\n', encoding='utf-8')
-    (REPO / 'HubAcademico' / 'Modelos' / 'CatalogoAreas.swift').write_text(swift_catalogo(), encoding='utf-8')
+    (REPO / 'HubAcademico' / 'Modelos' / 'CatalogoAreas.swift').write_text(swift_catalogo(por_sub), encoding='utf-8')
 
     docs = REPO / 'docs'
     docs.mkdir(exist_ok=True)
@@ -808,7 +809,7 @@ def main():
     if api.exists():
         texto_api = api.read_text(encoding='utf-8')
         ini, fim = texto_api.index('// <subareas>\n') + len('// <subareas>\n'), texto_api.index('// </subareas>')
-        api.write_text(texto_api[:ini] + js_subareas() + '\n' + texto_api[fim:], encoding='utf-8')
+        api.write_text(texto_api[:ini] + js_subareas(por_sub) + '\n' + texto_api[fim:], encoding='utf-8')
     print('JSON:', len(texto.encode()) // 1024, 'KB')
 
     # O fluxo do Node-RED embute o api.js: copia o código novo para dentro dele.
