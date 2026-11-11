@@ -271,8 +271,8 @@ final class ProducaoStore {
 
     // MARK: - Busca
 
-    /// Aplica o tipo e os filtros, procura o texto (palavras e, se ligada, IA) e ordena o resultado.
-    func buscar(texto: String, tipo: TipoProducao?, filtros: FiltrosBusca, usarIA: Bool, motor: BuscaInteligente) -> [Producao] {
+    /// Aplica o tipo e os filtros, procura o texto por palavras e ordena o resultado.
+    func buscar(texto: String, tipo: TipoProducao?, filtros: FiltrosBusca) -> [Producao] {
         let candidatos = producoes.filter { producao in
             (tipo == nil || producao.tipo == tipo) && atende(producao, filtros: filtros)
         }
@@ -289,17 +289,6 @@ final class ProducaoStore {
         var pontos: [UUID: Double] = [:]
         for producao in candidatos {
             pontos[producao.id] = Double(pontuacaoPorPalavras(producao, termos: termos))
-        }
-
-        if usarIA, let similares = motor.similaridades(consulta: consulta, itens: candidatos) {
-            let melhor = similares.values.max() ?? 0
-            let corte = max(melhor - 0.12, 0.3)
-            for (id, similaridade) in similares {
-                let atual = pontos[id] ?? 0
-                if atual > 0 || similaridade >= corte {
-                    pontos[id] = atual + max(similaridade, 0) * 5 + 0.01
-                }
-            }
         }
 
         let encontrados = candidatos.filter { (pontos[$0.id] ?? 0) > 0 }
