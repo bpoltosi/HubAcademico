@@ -214,8 +214,6 @@ struct APIClient {
         return URLSession(configuration: configuracao)
     }()
 
-    private static let codificador = JSONEncoder()
-
     /// Aceita datas ISO 8601 UTC com ou sem milissegundos, como definido no contrato.
     private static let decodificador: JSONDecoder = {
         let decodificador = JSONDecoder()
@@ -257,7 +255,7 @@ struct APIClient {
 
         if let corpo {
             pedido.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
-            pedido.httpBody = try Self.codificador.encode(corpo)
+            pedido.httpBody = try JSONEncoder().encode(corpo)
         }
 
         let (dados, resposta) = try await baixar(pedido)
