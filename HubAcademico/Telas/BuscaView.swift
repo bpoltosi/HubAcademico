@@ -12,9 +12,7 @@ struct BuscaView: View {
         let resultados = store.buscar(
             texto: busca.texto,
             tipo: busca.tipo,
-            filtros: busca.filtros,
-            usarIA: busca.usarIA,
-            motor: busca.motor
+            filtros: busca.filtros
         )
 
         ScrollView {
@@ -35,12 +33,6 @@ struct BuscaView: View {
                 if store.usaServidor, let erro = store.erroServidor {
                     Aviso(texto: erro + " Mostrando a última cópia salva; puxe a lista para tentar de novo.",
                           icone: "wifi.exclamationmark")
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                }
-
-                if busca.usarIA, !busca.motor.disponivel {
-                    Aviso(texto: "A busca com IA não está disponível neste aparelho. Mostrando resultados por palavras.")
                         .padding(.horizontal, 16)
                         .padding(.top, 12)
                 }
@@ -73,7 +65,7 @@ struct BuscaView: View {
                     EstadoVazio(
                         icone: busca.tipo?.simbolo ?? "magnifyingglass",
                         titulo: "Nada encontrado",
-                        mensagem: "Tente outras palavras, ligue a Busca IA ou desmarque alguns filtros."
+                        mensagem: "Tente outras palavras ou desmarque alguns filtros."
                     )
                 }
             }
@@ -108,7 +100,7 @@ struct BuscaView: View {
         } else if consulta.isEmpty {
             ordem = "Mais recentes"
         } else {
-            ordem = busca.usarIA ? "Relevância (IA)" : "Relevância"
+            ordem = "Relevância"
         }
 
         return HStack(spacing: 6) {
