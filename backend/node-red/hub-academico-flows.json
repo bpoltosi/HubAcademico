@@ -1,0 +1,391 @@
+[
+    {
+        "id": "3074222aa7503854",
+        "type": "tab",
+        "label": "Hub Acadêmico – API e banco",
+        "disabled": false,
+        "info": "### Hub Acadêmico – API e banco de dados\n\nRepositório acadêmico do CTISM/UFSM (app iOS do HackaTruck).\n\n**Tabelas** (contexto global `hub_db`):\n\n| tabela | colunas |\n|---|---|\n| projetos | id, tipo, titulo, descricao, autores, ano, area, subarea, cadeiraId, userId, instituicao, curso, link, plataforma, imagemURL, criadoEm |\n| cadeiras | id, nome |\n| users | id, nome, curso |\n| avaliacoes | id, projetoId, userId, nota |\n\nA média (`nota`) e o total de votos (`quant`) de cada projeto são calculados a partir de `avaliacoes`.\n\n**Para os dados sobreviverem a reinícios**, ative o armazenamento em arquivo no `settings.js`:\n\n```js\ncontextStorage: {\n    default: { module: \"localfilesystem\" }\n},\n```\n\nModeração: defina a variável de ambiente `HUB_ADMIN_TOKEN` e envie o mesmo valor no cabeçalho `X-Hub-Admin`.\n\nDocumentação completa: `backend/node-red/README.md` no repositório.\n",
+        "env": []
+    },
+    {
+        "id": "7321ff7203728ac7",
+        "type": "comment",
+        "z": "3074222aa7503854",
+        "name": "API REST do Hub Acadêmico · todas as rotas passam pelo nó “API”",
+        "info": "Recebe todas as rotas `/hub/...`, lê e grava as tabelas no contexto global `hub_db` e devolve JSON.\n\nO app envia o id do usuário no cabeçalho `X-Hub-User`. Esse id não aparece nas respostas públicas.\n\n| método | rota | uso |\n|---|---|---|\n| GET | /hub/status | teste de conexão e totais |\n| GET | /hub/projetos | lista (filtros: tipo, ano, area, subarea, curso, cadeira, autor, q, ordem=nota, limite) |\n| GET | /hub/projetos/:id | um projeto |\n| POST | /hub/projetos | publica (precisa de X-Hub-User) |\n| DELETE | /hub/projetos/:id | remove (quem publicou ou X-Hub-Admin) |\n| POST | /hub/avaliacoes | nota de 1 a 5; votar de novo troca a nota |\n| GET | /hub/subareas | subáreas de cada área (validação) |\n| GET | /hub/cadeiras | cadeiras com total de publicações |\n| POST | /hub/cadeiras | cria cadeira (X-Hub-Admin) |\n| POST | /hub/users | cadastra usuário e devolve o id |\n| GET | /hub/perfil | dados do usuário do cabeçalho |\n| PUT | /hub/perfil | altera nome e curso |\n",
+        "x": 270,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "2fd81b25b7e1fbba",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/status",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 90,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "01df60822731ea04",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/projetos",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 130,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "6524281f204f979b",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/projetos/:id",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 170,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "6ce705c870e958db",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/projetos",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 210,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "7801fbea92591587",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/projetos/:id",
+        "method": "delete",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 250,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "edfb898fc8f32f42",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/avaliacoes",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 290,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "db30c2aab585a4b6",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/subareas",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 330,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "62316648f18f6f0c",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/cadeiras",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 370,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "b45b22ca2053e1d7",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/cadeiras",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 410,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "398c79dc2ec8004e",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/users",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 450,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "a155f022f8afdae9",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/perfil",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 490,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "8683a8077e825b16",
+        "type": "http in",
+        "z": "3074222aa7503854",
+        "name": "",
+        "url": "/hub/perfil",
+        "method": "put",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 530,
+        "wires": [
+            [
+                "7c0fa45b6e1075a5"
+            ]
+        ]
+    },
+    {
+        "id": "7c0fa45b6e1075a5",
+        "type": "function",
+        "z": "3074222aa7503854",
+        "name": "API",
+        "func": "// =====================================================================\n// Hub Acadêmico · API REST e banco de dados no Node-RED\n// Corpo do nó \"function\" que atende a todas as rotas /hub/...\n//\n// Tabelas (guardadas no contexto global do Node-RED, na chave \"hub_db\"):\n//   projetos   id | tipo | titulo | descricao | autores | ano | area | subarea | cadeiraId\n//              | userId | instituicao | curso | link | plataforma | imagemURL | criadoEm\n//   cadeiras   id | nome\n//   users      id | nome | curso\n//   avaliacoes id | projetoId | userId | nota   (um voto por pessoa em cada projeto)\n//\n// A média (\"nota\") e a quantidade de votos (\"quant\") saem da tabela avaliacoes\n// e são devolvidas junto com cada projeto.\n//\n// Identificação: o app envia o id do usuário no cabeçalho \"X-Hub-User\".\n// Esse id funciona como uma chave do aparelho, por isso nunca é devolvido\n// nas listas públicas (no lugar dele vai o campo \"meu\": true/false).\n// A moderação (remover projeto, criar cadeira) usa o cabeçalho \"X-Hub-Admin\"\n// com o valor da variável de ambiente HUB_ADMIN_TOKEN.\n// =====================================================================\n\nconst CHAVE = 'hub_db';\nconst TABELAS = ['projetos', 'cadeiras', 'users', 'avaliacoes'];\nconst TIPOS = ['projeto', 'trabalho', 'prova', 'material'];\n// Subáreas de cada grande área (tabela do CNPq; a mesma lista do app em CatalogoAreas.swift).\n// Bloco gerado por ferramentas/catalogo/gerar_catalogo.py: não edite à mão.\n// <subareas>\nconst SUBAREAS = {\n    exatas: ['Astronomia', 'Ciência da Computação', 'Física', 'Geociências', 'Matemática', 'Oceanografia', 'Probabilidade e Estatística', 'Química'],\n    agrarias: ['Agronomia/Agrometeorologia', 'Agronomia/Ciência do Solo', 'Agronomia/Extensão Rural', 'Agronomia/Fitossanidade', 'Agronomia/Fitotecnia', 'Agronomia/Floricultura, Parques e Jardins', 'Ciência e Tecnologia de Alimentos/Ciência de Alimentos', 'Ciência e Tecnologia de Alimentos/Engenharia de Alimentos', 'Ciência e Tecnologia de Alimentos/Tecnologia de Alimentos', 'Engenharia Agrícola', 'Medicina Veterinária/Clínica e Cirurgia Animal', 'Medicina Veterinária/Inspeção de Produtos de Origem Animal', 'Medicina Veterinária/Medicina Veterinária Preventiva', 'Medicina Veterinária/Patologia Animal', 'Medicina Veterinária/Reprodução Animal', 'Recursos Florestais e Engenharia Florestal', 'Recursos Pesqueiros e Engenharia de Pesca', 'Zootecnia/Ecologia dos Animais Domésticos e Etologia', 'Zootecnia/Genética e Melhoramento dos Animais Domésticos', 'Zootecnia/Nutrição e Alimentação Animal', 'Zootecnia/Pastagem e Forragicultura', 'Zootecnia/Produção Animal'],\n    biologicas: ['Biofísica', 'Biologia Geral', 'Bioquímica', 'Botânica', 'Ecologia', 'Farmacologia', 'Fisiologia', 'Genética', 'Imunologia', 'Microbiologia', 'Morfologia', 'Parasitologia', 'Zoologia'],\n    saude: ['Educação Física', 'Enfermagem', 'Farmácia', 'Fisioterapia e Terapia Ocupacional', 'Fonoaudiologia', 'Medicina/Clínica Médica', 'Medicina/Cirurgia', 'Medicina/Saúde Materno-Infantil', 'Medicina/Psiquiatria', 'Medicina/Anatomia Patológica e Patologia Clínica', 'Medicina/Radiologia Médica', 'Medicina/Medicina Legal e Deontologia', 'Nutrição', 'Odontologia', 'Saúde Coletiva'],\n    humanas: ['Antropologia', 'Arqueologia', 'Ciência Política', 'Educação/Fundamentos da Educação', 'Educação/Administração Educacional', 'Educação/Planejamento e Avaliação Educacional', 'Educação/Ensino-Aprendizagem', 'Educação/Currículo', 'Educação/Orientação e Aconselhamento', 'Educação/Tópicos Especiais em Educação', 'Filosofia', 'Geografia', 'História', 'Psicologia', 'Sociologia'],\n    sociaisAplicadas: ['Administração', 'Arquitetura e Urbanismo', 'Arquivologia', 'Comunicação', 'Demografia', 'Desenho Industrial', 'Direito', 'Economia', 'Planejamento Urbano e Regional', 'Serviço Social', 'Turismo'],\n    engenharias: ['Engenharia Acústica', 'Engenharia Aeroespacial', 'Engenharia Biomédica', 'Engenharia Civil', 'Engenharia de Materiais e Metalúrgica', 'Engenharia de Minas', 'Engenharia de Produção', 'Engenharia de Transportes', 'Engenharia Elétrica', 'Engenharia Mecânica', 'Engenharia Naval e Oceânica', 'Engenharia Nuclear', 'Engenharia Química', 'Engenharia Sanitária'],\n    linguisticaLetrasArtes: ['Artes/Artes Plásticas', 'Artes/Dança', 'Artes/Música', 'Artes/Teatro', 'Letras', 'Linguística'],\n};\n// </subareas>\nconst AREAS = Object.keys(SUBAREAS);\nconst PLATAFORMAS = ['linkedin', 'instagram', 'blog', 'youtube', 'github', 'outro'];\nconst LIMITES = {\n    titulo: [5, 150], descricao: [20, 200], cadeira: [2, 150], instituicao: [2, 120],\n    curso: [0, 120], autor: [2, 80], nome: [2, 80], url: 500\n};\n\n// ---------- utilidades ----------\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction novoId() {\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n        const r = Math.random() * 16 | 0;\n        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16).toUpperCase();\n    });\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction texto(valor) {\n    return typeof valor === 'string' ? valor.trim() : '';\n}\n\nfunction normalizar(valor) {\n    return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\n}\n\n/** Conta caracteres como o Swift conta (um emoji composto vale 1). */\nfunction caracteres(valor) {\n    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {\n        let total = 0;\n        const partes = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' }).segment(valor);\n        for (const parte of partes) { if (parte) total++; }\n        return total;\n    }\n    return Array.from(valor).length;\n}\n\nfunction tamanhoOk(valor, campo) {\n    const n = caracteres(valor);\n    return n >= LIMITES[campo][0] && n <= LIMITES[campo][1];\n}\n\n/** Devolve o nome oficial da subárea (sem diferenciar acentos/maiúsculas) ou null se não for da área. */\nfunction subareaDe(area, nome) {\n    const chave = normalizar(nome);\n    const lista = SUBAREAS[area] || [];\n    return lista.find(function (s) { return normalizar(s) === chave; }) || null;\n}\n\n/** Devolve a URL limpa, null quando vazia ou undefined quando inválida. */\nfunction urlValida(valor) {\n    const t = texto(valor);\n    if (!t) return null;\n    if (t.length > LIMITES.url) return undefined;\n    if (/^https?:\\/\\/[^\\s/?#]+\\.[^\\s]+$/i.test(t) || /^asset:\\/\\/[\\w-]+$/.test(t)) return t;\n    return undefined;\n}\n\nfunction cabecalho(nome) {\n    const valor = (req.headers || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\nfunction ehModeracao() {\n    const chave = env.get('HUB_ADMIN_TOKEN');\n    return !!chave && cabecalho('x-hub-admin') === String(chave);\n}\n\n// ---------- banco ----------\nfunction abrirBanco() {\n    let db = global.get(CHAVE);\n    if (!db || typeof db !== 'object') db = { versao: 1 };\n    TABELAS.forEach(function (t) { if (!db[t] || typeof db[t] !== 'object') db[t] = {}; });\n    return db;\n}\n\nfunction gravarBanco(db) {\n    global.set(CHAVE, db);\n}\n\nfunction usuarioAtual(db) {\n    const id = idDe(cabecalho('x-hub-user'));\n    return id && db.users[id] ? db.users[id] : null;\n}\n\nfunction cadeiraPorNome(db, nome) {\n    const chave = normalizar(nome);\n    const existente = Object.values(db.cadeiras).find(function (c) { return normalizar(c.nome) === chave; });\n    if (existente) return existente;\n    const nova = { id: novoId(), nome: nome.trim(), criadoEm: agora() };\n    db.cadeiras[nova.id] = nova;\n    return nova;\n}\n\n/** Soma e quantidade de votos por projeto (e o voto do usuário informado). */\nfunction resumos(db, userId) {\n    const r = {};\n    Object.values(db.avaliacoes).forEach(function (a) {\n        const x = r[a.projetoId] || (r[a.projetoId] = { soma: 0, quant: 0, minhaNota: null });\n        x.soma += a.nota;\n        x.quant += 1;\n        if (userId && a.userId === userId) x.minhaNota = a.nota;\n    });\n    return r;\n}\n\nfunction media(resumo) {\n    return resumo && resumo.quant ? Math.round((resumo.soma / resumo.quant) * 100) / 100 : 0;\n}\n\n/** Formato público de um projeto (sem o id do usuário que publicou). */\nfunction apresentar(db, p, resumo, userId) {\n    const r = resumo || { soma: 0, quant: 0, minhaNota: null };\n    const cadeira = db.cadeiras[p.cadeiraId];\n    return {\n        id: p.id,\n        tipo: p.tipo,\n        titulo: p.titulo,\n        descricao: p.descricao,\n        imagemURL: p.imagemURL || null,\n        link: p.link || null,\n        plataforma: p.plataforma || 'outro',\n        area: p.area,\n        subarea: p.subarea || null,\n        cadeira: cadeira ? cadeira.nome : '',\n        cadeiraId: p.cadeiraId || null,\n        curso: p.curso || '',\n        instituicao: p.instituicao || '',\n        ano: p.ano,\n        autores: p.autores || [],\n        nota: media(r),\n        quant: r.quant,\n        minhaNota: r.minhaNota,\n        meu: !!userId && p.userId === userId,\n        criadoEm: p.criadoEm\n    };\n}\n\nfunction validarProjeto(corpo) {\n    const erros = [];\n    const titulo = texto(corpo.titulo);\n    const descricao = texto(corpo.descricao);\n    const cadeira = texto(corpo.cadeira);\n    const subareaInformada = texto(corpo.subarea);\n    const subarea = subareaInformada ? subareaDe(corpo.area, subareaInformada) : null;\n    const instituicao = texto(corpo.instituicao) || 'CTISM – UFSM';\n    const curso = texto(corpo.curso);\n    const ano = Number(corpo.ano);\n    const anoAtual = new Date().getFullYear();\n    const imagemURL = urlValida(corpo.imagemURL);\n    const link = urlValida(corpo.link);\n    const lista = Array.isArray(corpo.autores) ? corpo.autores : [corpo.autores];\n    const autores = lista.map(texto).filter(Boolean);\n\n    if (TIPOS.indexOf(corpo.tipo) < 0) erros.push('tipo: use ' + TIPOS.join(', '));\n    if (!tamanhoOk(titulo, 'titulo')) erros.push('titulo: de 5 a 150 caracteres');\n    if (!tamanhoOk(descricao, 'descricao')) erros.push('descricao: de 20 a 200 caracteres');\n    if (AREAS.indexOf(corpo.area) < 0) erros.push('area: use ' + AREAS.join(', '));\n    else if (subareaInformada && !subarea) erros.push('subarea: não pertence à área ' + corpo.area + ' (veja GET /hub/subareas)');\n    if (!tamanhoOk(cadeira, 'cadeira')) erros.push('cadeira: de 2 a 150 caracteres');\n    if (!tamanhoOk(instituicao, 'instituicao')) erros.push('instituicao: de 2 a 120 caracteres');\n    if (!tamanhoOk(curso, 'curso')) erros.push('curso: até 120 caracteres');\n    if (!(Number.isInteger(ano) && ano >= 1990 && ano <= anoAtual + 1)) erros.push('ano: entre 1990 e ' + (anoAtual + 1));\n    if (imagemURL === undefined) erros.push('imagemURL: endereço inválido (use http:// ou https://)');\n    if (link === undefined) erros.push('link: endereço inválido (use http:// ou https://)');\n    if (!autores.length || autores.length > 10 || !autores.every(function (a) { return tamanhoOk(a, 'autor'); })) {\n        erros.push('autores: de 1 a 10 nomes, cada um com 2 a 80 caracteres');\n    }\n\n    return {\n        erros: erros,\n        dados: {\n            tipo: corpo.tipo, titulo: titulo, descricao: descricao, area: corpo.area, subarea: subarea, cadeira: cadeira,\n            instituicao: instituicao, curso: curso, ano: ano, imagemURL: imagemURL || null,\n            link: link || null, autores: autores,\n            plataforma: PLATAFORMAS.indexOf(corpo.plataforma) >= 0 ? corpo.plataforma : 'outro'\n        }\n    };\n}\n\n// ---------- resposta HTTP ----------\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /hub/users e envie o id recebido no cabeçalho X-Hub-User']\n    });\n}\n\nfunction atualizarStatus(db) {\n    node.status({\n        fill: 'green', shape: 'dot',\n        text: Object.keys(db.projetos).length + ' publicações · ' + Object.keys(db.users).length + ' usuários'\n    });\n}\n\n// ---------- roteamento ----------\nconst req = msg.req || {};\nconst metodo = String(req.method || 'GET').toUpperCase();\nconst rota = (req.route && req.route.path) || '';\nconst params = req.params || {};\nconst consulta = req.query || {};\nconst corpo = (msg.payload && typeof msg.payload === 'object' && !Array.isArray(msg.payload)) ? msg.payload : {};\n\ntry {\n    const db = abrirBanco();\n    atualizarStatus(db);\n\n    switch (metodo + ' ' + rota) {\n\n    case 'GET /hub/status': {\n        return responder(200, {\n            ok: true,\n            servico: 'Hub Acadêmico – Repositório acadêmico do CTISM',\n            versao: db.versao || 1,\n            horario: agora(),\n            totais: {\n                projetos: Object.keys(db.projetos).length,\n                cadeiras: Object.keys(db.cadeiras).length,\n                users: Object.keys(db.users).length,\n                avaliacoes: Object.keys(db.avaliacoes).length\n            }\n        });\n    }\n\n    // ----- projetos -----\n    case 'GET /hub/projetos': {\n        const usuario = usuarioAtual(db);\n        const userId = usuario ? usuario.id : '';\n        const r = resumos(db, userId);\n        const termos = normalizar(consulta.q).split(/\\s+/).filter(function (t) { return t.length >= 2; });\n        let lista = Object.values(db.projetos).map(function (p) { return apresentar(db, p, r[p.id], userId); });\n\n        if (consulta.tipo) lista = lista.filter(function (p) { return p.tipo === consulta.tipo; });\n        if (consulta.ano) lista = lista.filter(function (p) { return String(p.ano) === String(consulta.ano); });\n        if (consulta.area) lista = lista.filter(function (p) { return p.area === consulta.area; });\n        if (consulta.subarea) {\n            const s = normalizar(consulta.subarea);\n            lista = lista.filter(function (p) { return normalizar(p.subarea) === s; });\n        }\n        if (consulta.curso) lista = lista.filter(function (p) { return p.curso === consulta.curso; });\n        if (consulta.cadeira) {\n            const c = normalizar(consulta.cadeira);\n            lista = lista.filter(function (p) { return normalizar(p.cadeira).indexOf(c) >= 0; });\n        }\n        if (consulta.autor) {\n            const a = normalizar(consulta.autor);\n            lista = lista.filter(function (p) {\n                return p.autores.some(function (n) { return normalizar(n).indexOf(a) >= 0; });\n            });\n        }\n        if (termos.length) {\n            lista = lista.filter(function (p) {\n                const alvo = normalizar([p.titulo, p.descricao, p.cadeira, p.autores.join(' ')].join(' '));\n                return termos.every(function (t) { return alvo.indexOf(t) >= 0; });\n            });\n        }\n        if (consulta.ordem === 'nota') {\n            lista.sort(function (a, b) { return (b.nota - a.nota) || (b.quant - a.quant); });\n        } else {\n            lista.sort(function (a, b) { return String(b.criadoEm).localeCompare(String(a.criadoEm)); });\n        }\n        const limite = Math.min(Math.max(parseInt(consulta.limite, 10) || 500, 1), 1000);\n        return responder(200, lista.slice(0, limite));\n    }\n\n    case 'GET /hub/projetos/:id': {\n        const p = db.projetos[idDe(params.id)];\n        if (!p) return responder(404, { erro: 'Projeto não encontrado' });\n        const usuario = usuarioAtual(db);\n        const userId = usuario ? usuario.id : '';\n        return responder(200, apresentar(db, p, resumos(db, userId)[p.id], userId));\n    }\n\n    case 'POST /hub/projetos': {\n        const usuario = usuarioAtual(db);\n        if (!usuario) return semUsuario();\n        const v = validarProjeto(corpo);\n        if (v.erros.length) return invalido(v.erros);\n        const cadeira = cadeiraPorNome(db, v.dados.cadeira);\n        const p = {\n            id: novoId(), tipo: v.dados.tipo, titulo: v.dados.titulo, descricao: v.dados.descricao,\n            autores: v.dados.autores, ano: v.dados.ano, area: v.dados.area, subarea: v.dados.subarea, cadeiraId: cadeira.id,\n            userId: usuario.id, instituicao: v.dados.instituicao, curso: v.dados.curso,\n            link: v.dados.link, plataforma: v.dados.plataforma, imagemURL: v.dados.imagemURL,\n            criadoEm: agora()\n        };\n        db.projetos[p.id] = p;\n        gravarBanco(db);\n        atualizarStatus(db);\n        return responder(201, apresentar(db, p, null, usuario.id));\n    }\n\n    case 'DELETE /hub/projetos/:id': {\n        const id = idDe(params.id);\n        const p = db.projetos[id];\n        const usuario = usuarioAtual(db);\n        const dono = !!(p && usuario && p.userId === usuario.id);\n        if (!dono && !ehModeracao()) {\n            return responder(403, { erro: 'Só quem publicou ou a moderação (cabeçalho X-Hub-Admin) pode remover' });\n        }\n        if (!p) return responder(404, { erro: 'Projeto não encontrado' });\n        delete db.projetos[id];\n        Object.keys(db.avaliacoes).forEach(function (k) {\n            if (db.avaliacoes[k].projetoId === id) delete db.avaliacoes[k];\n        });\n        gravarBanco(db);\n        atualizarStatus(db);\n        return responder(200, { ok: true, removido: id });\n    }\n\n    // ----- avaliações -----\n    case 'POST /hub/avaliacoes': {\n        const usuario = usuarioAtual(db);\n        if (!usuario) return semUsuario();\n        const projetoId = idDe(corpo.projetoId);\n        const nota = Number(corpo.nota);\n        if (!db.projetos[projetoId]) return responder(404, { erro: 'Projeto não encontrado' });\n        if (!(Number.isInteger(nota) && nota >= 1 && nota <= 5)) return invalido(['nota: número inteiro de 1 a 5']);\n\n        const existente = Object.values(db.avaliacoes).find(function (a) {\n            return a.projetoId === projetoId && a.userId === usuario.id;\n        });\n        if (existente) {\n            existente.nota = nota;\n            existente.atualizadoEm = agora();\n        } else {\n            const a = { id: novoId(), projetoId: projetoId, userId: usuario.id, nota: nota, criadoEm: agora() };\n            db.avaliacoes[a.id] = a;\n        }\n        gravarBanco(db);\n        const r = resumos(db, usuario.id)[projetoId];\n        return responder(200, { projetoId: projetoId, nota: media(r), quant: r.quant, minhaNota: r.minhaNota });\n    }\n\n    case 'GET /hub/subareas': {\n        return responder(200, SUBAREAS);\n    }\n\n    // ----- cadeiras -----\n    case 'GET /hub/cadeiras': {\n        const contagem = {};\n        Object.values(db.projetos).forEach(function (p) { contagem[p.cadeiraId] = (contagem[p.cadeiraId] || 0) + 1; });\n        const lista = Object.values(db.cadeiras)\n            .map(function (c) { return { id: c.id, nome: c.nome, total: contagem[c.id] || 0 }; })\n            .sort(function (a, b) { return a.nome.localeCompare(b.nome, 'pt-BR'); });\n        return responder(200, lista);\n    }\n\n    case 'POST /hub/cadeiras': {\n        if (!ehModeracao()) return responder(403, { erro: 'Cadastro de cadeiras só pela moderação (cabeçalho X-Hub-Admin)' });\n        const nome = texto(corpo.nome);\n        if (!tamanhoOk(nome, 'cadeira')) return invalido(['nome: de 2 a 80 caracteres']);\n        const c = cadeiraPorNome(db, nome);\n        gravarBanco(db);\n        return responder(201, { id: c.id, nome: c.nome });\n    }\n\n    // ----- users -----\n    case 'POST /hub/users': {\n        const nome = texto(corpo.nome);\n        const curso = texto(corpo.curso);\n        const erros = [];\n        if (!tamanhoOk(nome, 'nome')) erros.push('nome: de 2 a 80 caracteres');\n        if (!tamanhoOk(curso, 'curso')) erros.push('curso: até 120 caracteres');\n        if (erros.length) return invalido(erros);\n        const u = { id: novoId(), nome: nome, curso: curso, criadoEm: agora() };\n        db.users[u.id] = u;\n        gravarBanco(db);\n        atualizarStatus(db);\n        return responder(201, u);\n    }\n\n    case 'GET /hub/perfil': {\n        const usuario = usuarioAtual(db);\n        return usuario ? responder(200, usuario) : semUsuario();\n    }\n\n    case 'PUT /hub/perfil': {\n        const usuario = usuarioAtual(db);\n        if (!usuario) return semUsuario();\n        const erros = [];\n        const nome = corpo.nome === undefined ? usuario.nome : texto(corpo.nome);\n        const curso = corpo.curso === undefined ? (usuario.curso || '') : texto(corpo.curso);\n        if (!tamanhoOk(nome, 'nome')) erros.push('nome: de 2 a 80 caracteres');\n        if (!tamanhoOk(curso, 'curso')) erros.push('curso: até 120 caracteres');\n        if (erros.length) return invalido(erros);\n        usuario.nome = nome;\n        usuario.curso = curso;\n        usuario.atualizadoEm = agora();\n        gravarBanco(db);\n        return responder(200, usuario);\n    }\n\n    default:\n        return responder(404, { erro: 'Rota não encontrada: ' + metodo + ' ' + (rota || req.url || '') });\n    }\n} catch (e) {\n    // Sem o msg de propósito: assim um nó \"catch\" não tenta responder de novo à mesma requisição.\n    node.error('Hub Acadêmico: ' + (e && e.stack ? e.stack : e));\n    return responder(500, { erro: 'Erro interno no servidor', detalhes: [String(e && e.message ? e.message : e)] });\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "info": "Recebe todas as rotas `/hub/...`, lê e grava as tabelas no contexto global `hub_db` e devolve JSON.\n\nO app envia o id do usuário no cabeçalho `X-Hub-User`. Esse id não aparece nas respostas públicas.\n\n| método | rota | uso |\n|---|---|---|\n| GET | /hub/status | teste de conexão e totais |\n| GET | /hub/projetos | lista (filtros: tipo, ano, area, subarea, curso, cadeira, autor, q, ordem=nota, limite) |\n| GET | /hub/projetos/:id | um projeto |\n| POST | /hub/projetos | publica (precisa de X-Hub-User) |\n| DELETE | /hub/projetos/:id | remove (quem publicou ou X-Hub-Admin) |\n| POST | /hub/avaliacoes | nota de 1 a 5; votar de novo troca a nota |\n| GET | /hub/subareas | subáreas de cada área (validação) |\n| GET | /hub/cadeiras | cadeiras com total de publicações |\n| POST | /hub/cadeiras | cria cadeira (X-Hub-Admin) |\n| POST | /hub/users | cadastra usuário e devolve o id |\n| GET | /hub/perfil | dados do usuário do cabeçalho |\n| PUT | /hub/perfil | altera nome e curso |\n",
+        "x": 490,
+        "y": 310,
+        "wires": [
+            [
+                "7ccc29379f2b474d"
+            ]
+        ]
+    },
+    {
+        "id": "7ccc29379f2b474d",
+        "type": "http response",
+        "z": "3074222aa7503854",
+        "name": "Resposta JSON",
+        "statusCode": "",
+        "headers": {},
+        "x": 690,
+        "y": 310,
+        "wires": []
+    },
+    {
+        "id": "389336dbad0f494c",
+        "type": "comment",
+        "z": "3074222aa7503854",
+        "name": "Banco: contexto global “hub_db” · dados de exemplo",
+        "info": "Cria as publicações de exemplo (as mesmas do app) na primeira vez que o fluxo é implantado.\n\n- **iniciar**: só age se o banco nunca foi criado.\n- **restaurar**: apaga projetos, cadeiras e avaliações e recria os exemplos. Mantém os usuários.\n- **limpar-exemplos**: remove só os exemplos, para começar a usar de verdade.\n",
+        "x": 250,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "f6672de68062f2ed",
+        "type": "inject",
+        "z": "3074222aa7503854",
+        "name": "Ao implantar: cria o banco (1ª vez)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "iniciar",
+        "payload": "",
+        "payloadType": "date",
+        "x": 230,
+        "y": 670,
+        "wires": [
+            [
+                "89c798167cc6eb66"
+            ]
+        ]
+    },
+    {
+        "id": "4d2b33b7ba07c928",
+        "type": "inject",
+        "z": "3074222aa7503854",
+        "name": "Restaurar exemplos (mantém usuários)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "1",
+        "topic": "restaurar",
+        "payload": "",
+        "payloadType": "date",
+        "x": 230,
+        "y": 710,
+        "wires": [
+            [
+                "89c798167cc6eb66"
+            ]
+        ]
+    },
+    {
+        "id": "6c79aad66e699656",
+        "type": "inject",
+        "z": "3074222aa7503854",
+        "name": "Remover só os exemplos",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "1",
+        "topic": "limpar-exemplos",
+        "payload": "",
+        "payloadType": "date",
+        "x": 230,
+        "y": 750,
+        "wires": [
+            [
+                "89c798167cc6eb66"
+            ]
+        ]
+    },
+    {
+        "id": "89c798167cc6eb66",
+        "type": "function",
+        "z": "3074222aa7503854",
+        "name": "Dados de exemplo",
+        "func": "// =====================================================================\n// Hub Acadêmico · Dados de exemplo\n//   msg.topic = \"iniciar\"          cria os exemplos só na primeira vez\n//   msg.topic = \"restaurar\"        apaga projetos, cadeiras e avaliações e recria\n//                                  os exemplos (os usuários são mantidos)\n//   msg.topic = \"limpar-exemplos\"  remove só as publicações de exemplo e os votos\n//                                  delas, para começar a usar de verdade\n// As publicações são fictícias; os cursos são os oferecidos pelo CTISM.\n// =====================================================================\n\nconst CHAVE = 'hub_db';\nconst INSTITUICAO = 'CTISM – UFSM';\n\nconst CADEIRAS = [\n    { id: '22C09EDB-0EC5-509C-9323-E79595B228FF', nome: 'Desenvolvimento Web' },\n    { id: '684B5672-8F62-5E56-A189-C1C1A990AEEB', nome: 'Eletricidade Básica' },\n    { id: 'D2A8CFA0-653B-5AF8-B65B-AF734DD20DAC', nome: 'Ergonomia' },\n    { id: '598191FC-98A7-52E0-BDA9-DB206348D7FA', nome: 'Higiene Ocupacional' },\n    { id: 'A0B6286F-2796-5FD9-B73E-5E20B1C3228F', nome: 'Manufatura Aditiva' },\n    { id: '4CAE5F03-0F3A-5F62-BD15-0912EB5CAF14', nome: 'Microcontroladores' },\n    { id: 'D11CF57C-EF08-526F-9409-7DBFE96E4B31', nome: 'Prevenção de Riscos em Máquinas' },\n    { id: 'F497AD3D-5D88-5224-ABC7-8E9BC74E8DA3', nome: 'Redes de Computadores I' },\n    { id: '9660533F-E50B-5216-96C9-3DF968926CF2', nome: 'Segurança de Redes' },\n    { id: 'C998B693-DD64-54E1-AC5D-CF3847F2394D', nome: 'Sistemas Embarcados' }\n];\n\nconst EXEMPLOS = [\n    {\n        id: '3C657F19-D52A-5F45-AE46-BC31046D13C3', tipo: 'projeto', ano: 2026,\n        titulo: 'Monitor IoT de ruído nas oficinas do CTISM',\n        descricao: 'Protótipo com ESP32 e sensor de som que mede o ruído das oficinas do CTISM em tempo real e emite alerta quando o nível passa de 85 dB, apoiando a prevenção de perdas auditivas.',\n        imagemURL: 'asset://capa-monitor-ruido', link: 'https://example.com/hub-academico/monitor-ruido', plataforma: 'linkedin',\n        area: 'engenharias', subarea: 'Engenharia de Produção', cadeira: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Ana Clara Machado', 'Lucas Ferreira'],\n        media: 4.8, quant: 37, dias: 2\n    },\n    {\n        id: 'F40E46BC-DF8C-53D5-B16F-759162D6B227', tipo: 'trabalho', ano: 2026,\n        titulo: 'Dosimetria de ruído na oficina de soldagem',\n        descricao: 'Medições com dosímetro durante aulas práticas de soldagem, comparadas aos limites da NR-15, com recomendações de protetores auriculares e de rodízio das atividades.',\n        imagemURL: 'asset://capa-dosimetria', link: 'https://example.com/hub-academico/dosimetria', plataforma: 'blog',\n        area: 'engenharias', subarea: 'Engenharia de Produção', cadeira: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Bruna Teixeira'],\n        media: 4.6, quant: 21, dias: 5\n    },\n    {\n        id: '1490DF63-6FF1-59F1-873B-9E4C55066D48', tipo: 'prova', ano: 2026,\n        titulo: 'Prova de Higiene Ocupacional – 2026/1',\n        descricao: 'Primeira avaliação do semestre, com questões sobre agentes físicos, limites de tolerância e uso de EPIs. Inclui o gabarito comentado.',\n        imagemURL: 'asset://capa-prova-higiene', link: null, plataforma: 'outro',\n        area: 'saude', subarea: 'Saúde Coletiva', cadeira: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Turma 2026/1'],\n        media: 4.5, quant: 12, dias: 9\n    },\n    {\n        id: '5D53CA11-EF7D-5823-B5D4-724D8DA80503', tipo: 'projeto', ano: 2025,\n        titulo: 'Estufa automatizada com ESP32 e sensores de umidade',\n        descricao: 'Controle de irrigação e ventilação de uma estufa didática com sensores de solo e de ar, painel web em tempo real e alertas pelo celular.',\n        imagemURL: 'asset://capa-estufa', link: 'https://example.com/hub-academico/estufa', plataforma: 'instagram',\n        area: 'engenharias', subarea: 'Engenharia Elétrica', cadeira: 'Sistemas Embarcados',\n        curso: 'Técnico em Internet das Coisas Integrado ao Ensino Médio',\n        autores: ['Pedro Henrique Lopes', 'Júlia Martins'],\n        media: 4.7, quant: 18, dias: 40\n    },\n    {\n        id: 'BD327E0E-2BF6-5A4B-9609-F4DF21501F33', tipo: 'trabalho', ano: 2026,\n        titulo: 'Análise de vulnerabilidades em redes Wi-Fi',\n        descricao: 'Estudo de configurações comuns de roteadores, testes em laboratório isolado e um guia de boas práticas para proteger redes domésticas e de pequenas empresas.',\n        imagemURL: 'asset://capa-wifi', link: 'https://example.com/hub-academico/wifi', plataforma: 'blog',\n        area: 'exatas', subarea: 'Ciência da Computação', cadeira: 'Segurança de Redes',\n        curso: 'Curso Superior de Tecnologia em Segurança Cibernética',\n        autores: ['Rafael Costa'],\n        media: 4.4, quant: 9, dias: 12\n    },\n    {\n        id: '77478356-56C0-59DE-9ABE-A94D5A433B39', tipo: 'projeto', ano: 2025,\n        titulo: 'Braço robótico didático impresso em 3D',\n        descricao: 'Braço de quatro eixos impresso em PLA, acionado por servomotores e Arduino, para ensinar cinemática e programação nas aulas de fabricação.',\n        imagemURL: 'asset://capa-braco-robotico', link: 'https://example.com/hub-academico/braco-robotico', plataforma: 'youtube',\n        area: 'engenharias', subarea: 'Engenharia Mecânica', cadeira: 'Manufatura Aditiva',\n        curso: 'Curso Superior de Tecnologia em Fabricação Mecânica',\n        autores: ['Gabriel Souza', 'Larissa Prado'],\n        media: 4.9, quant: 25, dias: 60\n    },\n    {\n        id: '16B50825-18E3-55FC-80B9-535279A01B07', tipo: 'prova', ano: 2025,\n        titulo: 'Prova de Eletricidade Básica – 2025/2',\n        descricao: 'Avaliação com circuitos em série e em paralelo, Lei de Ohm e potência elétrica. Questões objetivas e dissertativas.',\n        imagemURL: 'asset://capa-prova-eletricidade', link: null, plataforma: 'outro',\n        area: 'engenharias', subarea: 'Engenharia Elétrica', cadeira: 'Eletricidade Básica',\n        curso: 'Técnico em Eletrotécnica',\n        autores: ['Turma 2025/2'],\n        media: 4.2, quant: 15, dias: 90\n    },\n    {\n        id: 'C69CD2E5-D3AF-55C0-A30C-086CA69A4BB3', tipo: 'material', ano: 2026,\n        titulo: 'Apostila de segurança em máquinas (NR-12)',\n        descricao: 'Resumo ilustrado dos requisitos da NR-12, com exemplos de proteções, dispositivos de parada de emergência e uma lista de verificação para as oficinas.',\n        imagemURL: 'asset://capa-apostila-nr12', link: 'https://example.com/hub-academico/nr12', plataforma: 'blog',\n        area: 'engenharias', subarea: 'Engenharia de Produção', cadeira: 'Prevenção de Riscos em Máquinas',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Monitoria de Segurança do Trabalho'],\n        media: 4.8, quant: 40, dias: 20\n    },\n    {\n        id: '8C08A1F4-D7EA-5CA2-B2F2-D47A1ABCAF67', tipo: 'material', ano: 2025,\n        titulo: 'Videoaulas de Arduino para iniciantes',\n        descricao: 'Série de vídeos curtos sobre entradas e saídas digitais, sensores analógicos e comunicação serial, com os códigos usados em aula.',\n        imagemURL: 'asset://capa-arduino', link: 'https://example.com/hub-academico/arduino', plataforma: 'youtube',\n        area: 'engenharias', subarea: 'Engenharia Elétrica', cadeira: 'Microcontroladores',\n        curso: 'Técnico em Automação Industrial',\n        autores: ['Diego Ramos'],\n        media: 4.6, quant: 22, dias: 75\n    },\n    {\n        id: 'B3D302B3-DE7D-5C0F-9576-E9DF7C263587', tipo: 'trabalho', ano: 2025,\n        titulo: 'Ergonomia nos laboratórios de informática',\n        descricao: 'Avaliação de postura, altura das mesas e iluminação em dois laboratórios, com propostas de ajustes de baixo custo e orientações de pausas.',\n        imagemURL: 'asset://capa-ergonomia', link: 'https://example.com/hub-academico/ergonomia', plataforma: 'linkedin',\n        area: 'saude', subarea: 'Saúde Coletiva', cadeira: 'Ergonomia',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Fernanda Alves', 'Tiago Nunes'],\n        media: 4.3, quant: 11, dias: 100\n    },\n    {\n        id: 'C507AB1B-3494-558B-8599-CBE687BCB895', tipo: 'projeto', ano: 2026,\n        titulo: 'Site acessível para a biblioteca do colégio',\n        descricao: 'Catálogo on-line com contraste ajustável, leitura por voz e navegação por teclado, seguindo as recomendações do eMAG e da WCAG.',\n        imagemURL: 'asset://capa-site-acessivel', link: 'https://example.com/hub-academico/biblioteca', plataforma: 'github',\n        area: 'exatas', subarea: 'Ciência da Computação', cadeira: 'Desenvolvimento Web',\n        curso: 'Técnico em Informática para Internet Integrado ao Ensino Médio',\n        autores: ['Isadora Ribeiro'],\n        media: 4.5, quant: 14, dias: 15\n    },\n    {\n        id: 'CBE337DB-4AB3-5810-ADC6-F904D064E18C', tipo: 'prova', ano: 2026,\n        titulo: 'Prova de Redes de Computadores I – 2026/1',\n        descricao: 'Questões sobre modelo OSI, endereçamento IPv4, sub-redes e comandos básicos de diagnóstico, com espaço para os cálculos.',\n        imagemURL: 'asset://capa-prova-redes', link: null, plataforma: 'outro',\n        area: 'exatas', subarea: 'Ciência da Computação', cadeira: 'Redes de Computadores I',\n        curso: 'Curso Superior de Tecnologia em Redes de Computadores',\n        autores: ['Turma 2026/1'],\n        media: 4.1, quant: 8, dias: 7\n    }\n];\n\nfunction dataISO(diasAtras) {\n    return new Date(Date.now() - diasAtras * 86400000).toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction novoId() {\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n        const r = Math.random() * 16 | 0;\n        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16).toUpperCase();\n    });\n}\n\nfunction contar(db) {\n    return Object.keys(db.projetos).length + ' publicações, ' + Object.keys(db.cadeiras).length +\n        ' cadeiras, ' + Object.keys(db.users).length + ' usuários e ' + Object.keys(db.avaliacoes).length + ' avaliações';\n}\n\n// A primeira versão do fluxo guardava o banco em \"ctia_db\": os dados passam para o nome novo.\nif (!global.get(CHAVE) && global.get('ctia_db')) {\n    global.set(CHAVE, global.get('ctia_db'));\n}\n\nlet db = global.get(CHAVE);\nif (!db || typeof db !== 'object') db = { versao: 1 };\n['projetos', 'cadeiras', 'users', 'avaliacoes'].forEach(function (t) {\n    if (!db[t] || typeof db[t] !== 'object') db[t] = {};\n});\n\nconst acao = msg.topic === 'restaurar' || msg.topic === 'limpar-exemplos' ? msg.topic : 'iniciar';\n\nif (acao === 'iniciar' && db.iniciadoEm) {\n    node.status({ fill: 'grey', shape: 'ring', text: 'banco carregado' });\n    msg.payload = 'Banco do Hub Acadêmico carregado: ' + contar(db) + '.';\n    return msg;\n}\n\nif (acao === 'limpar-exemplos') {\n    Object.keys(db.projetos).forEach(function (id) {\n        if (db.projetos[id].exemplo) delete db.projetos[id];\n    });\n    Object.keys(db.avaliacoes).forEach(function (id) {\n        if (!db.projetos[db.avaliacoes[id].projetoId]) delete db.avaliacoes[id];\n    });\n    const emUso = {};\n    Object.values(db.projetos).forEach(function (p) { emUso[p.cadeiraId] = true; });\n    // Só sai a cadeira de exemplo que ficou sem publicações; as criadas pela turma ficam.\n    Object.keys(db.cadeiras).forEach(function (id) {\n        const deExemplo = CADEIRAS.some(function (c) { return c.id === id; });\n        if (deExemplo && !emUso[id]) delete db.cadeiras[id];\n    });\n    db.iniciadoEm = db.iniciadoEm || dataISO(0);\n    global.set(CHAVE, db);\n    node.status({ fill: 'blue', shape: 'dot', text: 'exemplos removidos' });\n    msg.payload = 'Exemplos removidos. Ficaram ' + contar(db) + '.';\n    return msg;\n}\n\nif (acao === 'restaurar') {\n    db.projetos = {};\n    db.cadeiras = {};\n    db.avaliacoes = {};\n}\n\nCADEIRAS.forEach(function (c) {\n    db.cadeiras[c.id] = { id: c.id, nome: c.nome, criadoEm: dataISO(0) };\n});\n\nEXEMPLOS.forEach(function (e) {\n    const cadeira = CADEIRAS.find(function (c) { return c.nome === e.cadeira; });\n    db.projetos[e.id] = {\n        id: e.id, tipo: e.tipo, titulo: e.titulo, descricao: e.descricao, autores: e.autores,\n        ano: e.ano, area: e.area, subarea: e.subarea, cadeiraId: cadeira.id, userId: null, instituicao: INSTITUICAO,\n        curso: e.curso, link: e.link, plataforma: e.plataforma, imagemURL: e.imagemURL,\n        criadoEm: dataISO(e.dias), exemplo: true\n    };\n    // Votos de demonstração (4 e 5 estrelas) que chegam perto da média do exemplo.\n    const cincos = Math.max(0, Math.min(e.quant, Math.round((e.media - 4) * e.quant)));\n    for (let i = 0; i < e.quant; i++) {\n        const a = { id: novoId(), projetoId: e.id, userId: null, nota: i < cincos ? 5 : 4, criadoEm: dataISO(e.dias), exemplo: true };\n        db.avaliacoes[a.id] = a;\n    }\n});\n\ndb.iniciadoEm = db.iniciadoEm || dataISO(0);\nglobal.set(CHAVE, db);\nnode.status({ fill: 'green', shape: 'dot', text: acao === 'restaurar' ? 'exemplos restaurados' : 'banco criado' });\nmsg.payload = (acao === 'restaurar' ? 'Exemplos restaurados: ' : 'Banco do Hub Acadêmico criado: ') + contar(db) + '.';\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "info": "Cria as publicações de exemplo (as mesmas do app) na primeira vez que o fluxo é implantado.\n\n- **iniciar**: só age se o banco nunca foi criado.\n- **restaurar**: apaga projetos, cadeiras e avaliações e recria os exemplos. Mantém os usuários.\n- **limpar-exemplos**: remove só os exemplos, para começar a usar de verdade.\n",
+        "x": 520,
+        "y": 710,
+        "wires": [
+            [
+                "4ef051484db3e2e9"
+            ]
+        ]
+    },
+    {
+        "id": "4ef051484db3e2e9",
+        "type": "debug",
+        "z": "3074222aa7503854",
+        "name": "Situação do banco",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 730,
+        "y": 710,
+        "wires": []
+    }
+]

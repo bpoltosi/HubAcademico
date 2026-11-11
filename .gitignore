@@ -1,0 +1,21 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+DerivedData/
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Python (ferramentas/)
+__pycache__/
+
+# Fontes Rawline (descomente para não versionar os arquivos .ttf)
+# HubAcademico/Recursos/Fontes/
