@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hubacademico.local/contratos/projeto-criacao.schema.json",
+  "title": "Corpo de POST /hub/projetos",
+  "type": "object",
+  "required": [
+    "tipo",
+    "titulo",
+    "descricao",
+    "area",
+    "cadeira",
+    "curso",
+    "instituicao",
+    "ano",
+    "autores",
+    "plataforma"
+  ],
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "projeto",
+        "trabalho",
+        "prova",
+        "material"
+      ]
+    },
+    "titulo": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 150
+    },
+    "descricao": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 200
+    },
+    "imagemURL": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "link": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "plataforma": {
+      "type": "string",
+      "enum": [
+        "linkedin",
+        "instagram",
+        "blog",
+        "youtube",
+        "github",
+        "outro"
+      ]
+    },
+    "area": {
+      "type": "string",
+      "enum": [
+        "agrarias",
+        "biologicas",
+        "engenharias",
+        "exatas",
+        "humanas",
+        "linguisticaLetrasArtes",
+        "saude",
+        "sociaisAplicadas"
+      ]
+    },
+    "subarea": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cadeira": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 150
+    },
+    "curso": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "instituicao": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "ano": {
+      "type": "integer",
+      "minimum": 1990
+    },
+    "autores": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 80
+      },
+      "minItems": 1,
+      "maxItems": 10
+    }
+  },
+  "additionalProperties": false
+}
