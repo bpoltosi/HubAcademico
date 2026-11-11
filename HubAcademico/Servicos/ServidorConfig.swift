@@ -42,7 +42,7 @@ enum ServidorConfig {
         return digitado ?? daTurma
     }
 
-    /// Aceita "192.168.0.10:1880", "localhost:1880" ou "https://meu-node-red.com/api".
+    /// O endereço-base padrão do projeto é "http://127.0.0.1:1880/"; outros hosts continuam aceitos.
     /// Sem esquema, usa `http://` para endereços da rede local e `https://` para os demais.
     static func normalizar(_ texto: String) -> URL? {
         var limpo = texto.aparado
