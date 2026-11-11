@@ -26,8 +26,8 @@ struct MateriaUFSM: Identifiable, Hashable, Sendable {
 ///
 /// O arquivo é gerado por `ferramentas/catalogo/gerar_catalogo.py` a partir da planilha de currículos dos cursos de
 /// graduação da UFSM: cada disciplina foi ligada a uma subárea pelo assunto (nome e departamento);
-/// as genéricas, como TCC e estágio, ficam na subárea do curso. A mesma lista está em
-/// `docs/materias-por-subarea.csv`, para conferência.
+/// as genéricas, como TCC e estágio, ficam na subárea do curso. O CSV em
+/// `docs/materias-por-subarea.csv` é uma exportação simplificada por curso (Area, SubArea, Disciplina).
 struct CatalogoMaterias: Sendable {
     let fonte: String
     private let porSubarea: [String: [MateriaUFSM]]

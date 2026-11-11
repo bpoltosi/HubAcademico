@@ -10,7 +10,7 @@ Entradas (pasta dados/):
 Saídas (geradas; não edite à mão):
   HubAcademico/Modelos/CatalogoAreas.swift   subáreas de cada área
   HubAcademico/Recursos/materias-ufsm.json   matérias da UFSM por subárea (lido por CatalogoMaterias.swift)
-  docs/materias-por-subarea.csv              a mesma classificação, para conferir no Excel
+  docs/materias-por-subarea.csv              disciplinas por grande área e curso (Area; SubArea; Disciplina)
   backend/node-red/src/api.js                bloco SUBAREAS (validação da subárea na API) e,
                                              com o Node.js instalado, o fluxo hub-academico-flows.json
 
@@ -798,12 +798,12 @@ def main():
     docs.mkdir(exist_ok=True)
     with open(docs / 'materias-por-subarea.csv', 'w', encoding='utf-8-sig', newline='') as f:
         w = csv.writer(f, delimiter=';')
-        w.writerow(['Grande área', 'Subárea', 'Matéria', 'Códigos', 'Cursos'])
+        w.writerow(['Area', 'SubArea', 'Disciplina'])
         for area, nome_area, subs in AREAS:
             for k, n in subs:
                 for m in por_sub.get(k, []):
-                    w.writerow([nome_area, n, m['nome'], ', '.join(m['codigos']),
-                                ', '.join(cursos[i] for i in m['cursos'])])
+                    for indice_curso in m['cursos']:
+                        w.writerow([nome_area, cursos[indice_curso], m['nome']])
     api = REPO / 'backend' / 'node-red' / 'src' / 'api.js'
     if api.exists():
         texto_api = api.read_text(encoding='utf-8')
