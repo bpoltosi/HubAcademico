@@ -5,7 +5,7 @@ Este fluxo transforma o Node-RED no servidor do Hub Acadêmico. Ele guarda as **
 - **Só nós do núcleo do Node-RED:** `http in`, `function`, `http response`, `inject`, `debug` e `comment`. Não é preciso instalar nada na paleta.
 - **Banco no próprio Node-RED:** as tabelas ficam no contexto global, na chave `hub_db`, e são gravadas em arquivo (veja o passo 2).
 - **Dados de exemplo:** na primeira implantação, o fluxo cria as mesmas 12 publicações que o app traz.
-- **Áreas e subáreas:** a API confere se a subárea enviada pertence à área (tabela do CNPq, a mesma do app).
+- **Áreas e subáreas:** a API confere se a subárea enviada pertence à área e possui disciplinas no catálogo atual da UFSM (classificação baseada na tabela do CNPq).
 
 | Arquivo | O que é |
 |---|---|
@@ -97,7 +97,7 @@ erDiagram
         lista autores
         int ano
         texto area "8 grandes áreas do CNPq"
-        texto subarea "uma das 104 subáreas da área"
+        texto subarea "uma das subáreas com disciplinas no catálogo atual da UFSM"
         uuid cadeiraId FK
         uuid userId FK
         texto link
@@ -129,7 +129,7 @@ Versão em imagem para a apresentação: [`docs/banco-de-dados.png`](../../docs/
 | No rascunho | No banco | Observação |
 |---|---|---|
 | projetos: inst, ID, titulo, desc, autor, ano, area, link | `instituicao`, `id`, `titulo`, `descricao`, `autores`, `ano`, `area`, `link` | `autores` é uma lista (trabalhos em grupo) |
-| (nova) | `subarea` | nome da subárea do CNPq, sempre gravado com a grafia oficial (`GET /hub/subareas`) |
+| (nova) | `subarea` | subárea disponível no catálogo atual da UFSM, sempre gravada com a grafia oficial (`GET /hub/subareas`) |
 | projetos: cadeira | `cadeiraId` → **cadeiras** | a cadeira (a “matéria” do app) é criada sozinha na 1ª publicação, sem duplicar “Higiene ocupacional” e “higiene ocupacional” |
 | projetos: user | `userId` → **users** | é preenchido pelo servidor e **nunca sai nas respostas** (veja Segurança) |
 | projetos: avaliação | `nota` e `quant` em cada projeto | calculados a partir da tabela avaliações |
