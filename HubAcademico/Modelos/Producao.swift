@@ -167,7 +167,6 @@ extension Producao {
     var autoresFormatados: String {
         autores.formatted(.list(type: .and).locale(Locale(identifier: "pt_BR")))
     }
-
 }
 
 /// Subáreas no formato da tabela do CNPq: "Agronomia/Ciência do Solo" é a subárea
