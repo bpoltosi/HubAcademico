@@ -1,4 +1,4 @@
-# Hub Acadêmico — Repositório acadêmico do CTISM/UFSM
+# Hub Acadêmico
 
 Aplicativo iOS em **SwiftUI** para os(as) estudantes do Colégio Técnico Industrial de Santa Maria (CTISM/UFSM) publicarem e encontrarem **projetos**, **trabalhos acadêmicos**, **provas** (banco de provas) e **material complementar**.
 
@@ -22,7 +22,7 @@ O app tem **3 telas de navegação e 1 sheet**, ou seja, **4 views programadas**
 | Tela | O que faz |
 |---|---|
 | **1. Início** | Cinco atalhos em **ordem crescente de caracteres**: Projetos → Banco de provas → Trabalhos acadêmicos → Material complementar → **Cadastre o seu projeto** (em destaque). Os quatro primeiros abrem a Busca já filtrada por aquele tipo. Mostra o primeiro nome do perfil na saudação. |
-| **2. Busca** | Campo de busca no cabeçalho, sem diferenciar acentos nem maiúsculas (também procura na área, subárea e matéria). O **funil** abre os filtros em checkbox, também em ordem crescente de caracteres: Ano, Área, Autor, Curso, Título, Matéria e Melhor avaliação. O selo dourado mostra quantos filtros estão ativos. O botão **Busca IA** liga a busca por significado. Quando aberta por um atalho, mostra só aquele tipo (o selo com ✕ volta para todos). |
+| **2. Busca** | Campo de busca no cabeçalho, sem diferenciar acentos nem maiúsculas (também procura na área, subárea e matéria). O **funil** abre os filtros em checkbox, também em ordem crescente de caracteres: Ano, Área, Autor, Curso, Título, Matéria e Melhor avaliação. O selo dourado mostra quantos filtros estão ativos. Quando aberta por um atalho, mostra só aquele tipo (o selo com ✕ volta para todos). |
 | **3. Visualização (sheet)** | Sobe por cima da busca ocupando **80% da altura** e pode ser arrastada até a tela cheia ou para baixo para fechar. Mostra título, imagem carregada da URL informada, autoria com link para a publicação original, resumo, **média de avaliações com estrelas para o(a) estudante avaliar**, área, subárea e matéria. Também permite compartilhar. |
 | **4. Cadastro** | Um só formulário para Projeto, Trabalho ou Prova: Título, Descrição (contador de **200 caracteres**), Imagem (URL, com prévia), Link da publicação (reconhece LinkedIn, Instagram, YouTube, GitHub e blogs), **Área → Subárea → Matéria em cascata** (veja abaixo), Instituição e Ano. Valida os campos e salva rascunho; ao publicar, volta para a tela anterior e abre a nova publicação na sheet. A autoria vem do cartão **“Publicando como…”**, que abre o perfil (nome e curso). |
 
@@ -50,17 +50,13 @@ O app funciona **sozinho no aparelho** (modo demonstração) ou **ligado ao Node
 
 O app já vem com **12 publicações fictícias** de exemplo e com os **17 cursos oficiais do CTISM**.
 
-### Busca IA (no próprio aparelho)
-
-A Busca IA compara o **significado** da pergunta com o de cada publicação. Ela usa os *embeddings* em português do framework **NaturalLanguage** da Apple, que rodam no iPhone: não precisa de internet nem de chave de API, e nenhum dado sai do aparelho. Se o aparelho não tiver o modelo de frases, o app usa a média dos vetores das palavras. Se também não houver esse modelo, a busca continua só por palavras e um aviso aparece na tela.
-
 ---
 
 ## Requisitos
 
 - Mac com **Xcode 16 ou mais recente**
 - **iOS 17** ou mais recente (Simulador ou iPhone)
-- Nenhuma dependência externa: só SwiftUI, Observation, NaturalLanguage e CoreText
+- Nenhuma dependência externa: só SwiftUI, Observation e CoreText
 - Opcional: **Node-RED** (qualquer versão recente) para compartilhar os dados entre os aparelhos
 
 ## Como rodar
@@ -95,7 +91,7 @@ HubAcademico/
 ├── DesignSystem/        Cores, tipografia, componentes, barra "‹ Voltar" e cabeçalho institucional
 ├── Modelos/             Producao, tipos, áreas e subáreas (CatalogoAreas), cursos do CTISM, formulário e exemplos
 ├── Recursos/            materias-ufsm.json: matérias dos currículos da UFSM por subárea
-├── Servicos/            Armazenamento, cliente da API, catálogo de matérias, busca (palavras + IA), rascunho e servidor
+├── Servicos/            Armazenamento, cliente da API, catálogo de matérias, busca por palavras, rascunho e servidor
 ├── Telas/               Início, Busca, Filtros, Visualização (sheet), Cadastro, Subáreas, Matérias e Perfil
 ├── Utilitarios/         Extensões (texto, URL, notas) e o gesto de voltar
 ├── Settings.bundle      Campo "Endereço" do servidor nos Ajustes do iPhone
@@ -108,7 +104,7 @@ docs/                            Imagens do design, diagrama do banco e a planil
 
 ### Arquitetura em poucas linhas
 
-- **Estado compartilhado** com `@Observable` (iOS 17): `ProducaoStore` guarda as publicações e as notas; `BuscaModel` guarda o texto, os filtros e a IA; `Router` guarda o caminho da navegação e a sheet. Os três são injetados com `.environment(...)`.
+- **Estado compartilhado** com `@Observable` (iOS 17): `ProducaoStore` guarda as publicações e as notas; `BuscaModel` guarda o texto e os filtros; `Router` guarda o caminho da navegação e a sheet. Os três são injetados com `.environment(...)`.
 - **Cabeçalho institucional** fixo (brasão, nome, ☰ e busca), fora da `NavigationStack`, como no site. As telas internas usam a barra branca com título e **‹ Voltar** (`barraDePagina` em `Tema.swift`).
 - **Navegação:** a pilha (`Router.caminho`) só tem Busca e Cadastro. “Voltar” usa o `dismiss` da tela; o ☰ chama `Router.voltarAoInicio()`, que esvazia a pilha e fecha a sheet. A Tela 3 é uma `.sheet(item:)` controlada por `Router.detalhe`, com `presentationDetents([.fraction(0.8), .large])`.
 - **Cascata do cadastro:** `FormularioCadastro.escolherArea/escolherSubarea/escolherMateria` mantêm área, subárea e matéria coerentes. As subáreas vêm de `CatalogoAreas.swift`; as matérias, de `CatalogoMaterias` (lido de `materias-ufsm.json` em segundo plano ao abrir o cadastro).
@@ -162,7 +158,7 @@ O passo a passo completo, o diagrama das tabelas, as rotas com exemplos em `curl
 | `plus-circle` (Cadastre o seu projeto) | `plus.circle.fill` |
 | `filter` / `search` / `bars` (voltar ao Início) | `line.3.horizontal.decrease` / `magnifyingglass` / `line.3.horizontal` |
 | `chevron-left` + “Voltar” | `chevron.backward` + “Voltar” |
-| `magic` (Busca IA) / `star` | `wand.and.stars` / `star.fill` |
+| `star` | `star.fill` |
 
 ### Usar a fonte Rawline (recomendado)
 
