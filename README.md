@@ -39,7 +39,7 @@ O app tem **3 telas de navegação e 1 sheet**, ou seja, **4 views programadas**
 </p>
 
 1. **Área:** as 8 grandes áreas da tabela do CNPq.
-2. **Subárea:** ao escolher a área, as subáreas dela **abrem logo abaixo, dentro do próprio campo Subárea** (104 no total; as da mesma família, como “Agronomia/…” e “Medicina/…”, ficam agrupadas). Escolhida a subárea, a lista fecha e mostra só a escolhida, com **Trocar** para abrir de novo.
+2. **Subárea:** ao escolher a área, as subáreas dela **abrem logo abaixo, dentro do próprio campo Subárea** (102 atualmente, somente as que possuem disciplinas nos currículos da UFSM; as da mesma família, como “Agronomia/…” e “Medicina/…”, ficam agrupadas). Escolhida a subárea, a lista fecha e mostra só a escolhida, com **Trocar** para abrir de novo.
 3. **Matéria:** abre a lista das matérias **daquela subárea**, tiradas dos currículos de 140 cursos de graduação da UFSM (7.077 matérias), com busca por nome ou código. Também mostra as matérias já usadas no Hub naquela subárea. Na busca aparecem ainda as de **outras subáreas** (escolher uma delas ajusta a área e a subárea) e a opção **Usar “texto digitado”**, para matérias que não estão na lista, como as dos cursos técnicos do CTISM.
 
 Trocar a área limpa a subárea e a matéria; trocar a subárea limpa a matéria. A API do Node-RED confere se a subárea pertence à área.
