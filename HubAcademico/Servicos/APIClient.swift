@@ -164,7 +164,7 @@ private struct PerfilDTO: Encodable {
 /// Cliente REST do fluxo Node-RED baseado nos nós cloudantplus in/out.
 /// Os caminhos abaixo correspondem aos nós HTTP do flows.json real.
 struct APIClient {
-    /// Endereço do Node-RED, ex.: http://192.168.0.10:1880.
+    /// Endereço-base padrão do Node-RED: http://127.0.0.1:1880/.
     let base: URL
     /// UUID do usuário lógico, enviado no cabeçalho X-Hub-User.
     var usuarioID: String?
