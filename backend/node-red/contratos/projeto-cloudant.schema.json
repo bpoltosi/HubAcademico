@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hubacademico.local/contratos/projeto-cloudant.schema.json",
+  "title": "Documento interno de projeto no IBM Cloudant",
+  "type": "object",
+  "required": [
+    "_id",
+    "tipoDocumento",
+    "id",
+    "tipo",
+    "titulo",
+    "descricao",
+    "autores",
+    "ano",
+    "area",
+    "subarea",
+    "cadeira",
+    "curso",
+    "instituicao",
+    "usuarioId",
+    "imagemURL",
+    "link",
+    "plataforma",
+    "criadoEm"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string",
+      "pattern": "^projeto:[0-9A-Fa-f-]{36}$"
+    },
+    "_rev": {
+      "type": "string"
+    },
+    "tipoDocumento": {
+      "const": "projeto"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "projeto",
+        "trabalho",
+        "prova",
+        "material"
+      ]
+    },
+    "titulo": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "autores": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ano": {
+      "type": "integer"
+    },
+    "area": {
+      "type": "string"
+    },
+    "subarea": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cadeira": {
+      "type": "string",
+      "description": "Snapshot textual do catálogo local; não é chave estrangeira."
+    },
+    "cadeiraId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Campo legado opcional, somente para compatibilidade."
+    },
+    "curso": {
+      "type": "string",
+      "description": "Snapshot textual do catálogo local."
+    },
+    "instituicao": {
+      "type": "string"
+    },
+    "usuarioId": {
+      "type": "string",
+      "description": "Identificador interno derivado de X-Hub-User; nunca expor na API pública."
+    },
+    "imagemURL": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "link": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "plataforma": {
+      "type": "string",
+      "enum": [
+        "linkedin",
+        "instagram",
+        "blog",
+        "youtube",
+        "github",
+        "outro"
+      ]
+    },
+    "criadoEm": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}
