@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hubacademico.local/contratos/projeto-api.schema.json",
+  "title": "Projeto retornado pela API do Hub Academico",
+  "type": "object",
+  "required": [
+    "id",
+    "tipo",
+    "titulo",
+    "descricao",
+    "imagemURL",
+    "link",
+    "plataforma",
+    "area",
+    "subarea",
+    "cadeira",
+    "cadeiraId",
+    "curso",
+    "instituicao",
+    "ano",
+    "autores",
+    "nota",
+    "quant",
+    "minhaNota",
+    "meu",
+    "criadoEm"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "projeto",
+        "trabalho",
+        "prova",
+        "material"
+      ]
+    },
+    "titulo": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 150
+    },
+    "descricao": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 200
+    },
+    "imagemURL": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "link": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "plataforma": {
+      "type": "string",
+      "enum": [
+        "linkedin",
+        "instagram",
+        "blog",
+        "youtube",
+        "github",
+        "outro"
+      ]
+    },
+    "area": {
+      "type": "string",
+      "enum": [
+        "agrarias",
+        "biologicas",
+        "engenharias",
+        "exatas",
+        "humanas",
+        "linguisticaLetrasArtes",
+        "saude",
+        "sociaisAplicadas"
+      ]
+    },
+    "subarea": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cadeira": {
+      "type": "string"
+    },
+    "cadeiraId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "curso": {
+      "type": "string"
+    },
+    "instituicao": {
+      "type": "string"
+    },
+    "ano": {
+      "type": "integer",
+      "minimum": 1990
+    },
+    "autores": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 10
+    },
+    "nota": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "quant": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minhaNota": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 5
+    },
+    "meu": {
+      "type": "boolean"
+    },
+    "criadoEm": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}
