@@ -1,6 +1,6 @@
 import Foundation
 
-/// Problemas de comunicação com o Node-RED, já com mensagens para mostrar na tela.
+/// Problemas de comunicação com a API REST do Hub Acadêmico.
 enum ErroAPI: LocalizedError {
     case semConexao(String)
     case servidor(status: Int, mensagem: String)
@@ -21,9 +21,11 @@ enum ErroAPI: LocalizedError {
     }
 }
 
-// MARK: - Formatos da API (veja backend/node-red/README.md)
+// MARK: - Contratos HTTP
 
-/// Projeto como vem do Node-RED. A coluna "cadeira" do banco é a "matéria" do app.
+/// Resposta pública de GET /hub/projetos e POST /hub/projetos.
+/// Os nomes seguem o contrato camelCase documentado para a API.
+/// Metadados internos do Cloudant (_id e _rev) não fazem parte deste DTO.
 struct ProjetoDTO: Decodable {
     let id: String
     let tipo: String
@@ -35,6 +37,7 @@ struct ProjetoDTO: Decodable {
     let area: String
     let subarea: String?
     let cadeira: String?
+    let cadeiraId: String?
     let curso: String?
     let instituicao: String?
     let ano: Int
@@ -45,7 +48,7 @@ struct ProjetoDTO: Decodable {
     let meu: Bool?
     let criadoEm: Date?
 
-    /// Converte para o modelo do app; devolve `nil` se o tipo, a área ou o id não forem reconhecidos.
+    /// Converte a resposta da API para o modelo usado nas telas.
     var producao: Producao? {
         guard let uuid = UUID(uuidString: id),
               let tipoProducao = TipoProducao(rawValue: tipo),
@@ -75,7 +78,8 @@ struct ProjetoDTO: Decodable {
     }
 }
 
-/// Corpo do POST /hub/projetos.
+/// Corpo de POST /hub/projetos.
+/// O servidor gera id, criadoEm e usuarioId; por isso esses campos não são enviados pelo app.
 struct NovoProjetoDTO: Encodable {
     let tipo: String
     let titulo: String
@@ -108,7 +112,7 @@ struct NovoProjetoDTO: Encodable {
     }
 }
 
-/// Resposta do POST /hub/avaliacoes.
+/// Resposta de POST /hub/avaliacoes. Mantida para compatibilidade com a API atual.
 struct ResumoAvaliacaoDTO: Decodable {
     let projetoId: String
     let nota: Double
@@ -116,14 +120,14 @@ struct ResumoAvaliacaoDTO: Decodable {
     let minhaNota: Int?
 }
 
-/// Usuário (tabela users). O `id` identifica este aparelho no servidor.
+/// Resposta de POST /hub/users e PUT /hub/perfil.
 struct UsuarioDTO: Decodable {
     let id: String
     let nome: String
     let curso: String?
 }
 
-/// Resposta do GET /hub/status.
+/// Resposta de GET /hub/status.
 struct StatusDTO: Decodable {
     struct Totais: Decodable {
         let projetos: Int
@@ -150,40 +154,58 @@ private struct PerfilDTO: Encodable {
     let curso: String
 }
 
-// MARK: - Cliente
+// MARK: - Cliente HTTP
 
-/// Cliente da API REST do Hub Acadêmico no Node-RED.
+/// Cliente REST do Node-RED. A base deve conter somente o endereço do servidor,
+/// por exemplo: http://192.168.0.10:1880. Os caminhos /hub/... são definidos aqui.
 struct APIClient {
-    /// Endereço do Node-RED, ex.: http://192.168.0.10:1880 (as rotas ficam em /hub/...).
     let base: URL
-    /// Id do usuário, enviado no cabeçalho `X-Hub-User`.
     var usuarioID: String?
 
+    private enum Rota {
+        static let status = "hub/status"
+        static let projetos = "hub/projetos"
+        static let avaliacoes = "hub/avaliacoes"
+        static let usuarios = "hub/users"
+        static let perfil = "hub/perfil"
+    }
+
     func status() async throws -> StatusDTO {
-        try await enviar("GET", "hub/status")
+        try await enviar("GET", Rota.status)
     }
 
+    /// Lista as publicações persistidas no backend.
+    /// O catálogo acadêmico (áreas, cursos e cadeiras) não é consultado por esta rota.
     func projetos() async throws -> [ProjetoDTO] {
-        try await enviar("GET", "hub/projetos")
+        try await enviar("GET", Rota.projetos)
     }
 
+    /// Envia uma nova publicação. O Node-RED exige X-Hub-User e gera id/criadoEm.
     func publicar(_ novo: NovoProjetoDTO) async throws -> ProjetoDTO {
-        try await enviar("POST", "hub/projetos", corpo: novo)
+        try exigirUsuario()
+        return try await enviar("POST", Rota.projetos, corpo: novo)
     }
 
+    /// Mantido para o fluxo atual de avaliações, fora da migração GET/POST de projetos.
     func avaliar(projetoID: UUID, nota: Int) async throws -> ResumoAvaliacaoDTO {
-        try await enviar("POST", "hub/avaliacoes", corpo: NotaDTO(projetoId: projetoID.uuidString, nota: nota))
+        try exigirUsuario()
+        return try await enviar(
+            "POST",
+            Rota.avaliacoes,
+            corpo: NotaDTO(projetoId: projetoID.uuidString, nota: nota)
+        )
     }
 
     func cadastrarUsuario(nome: String, curso: String) async throws -> UsuarioDTO {
-        try await enviar("POST", "hub/users", corpo: PerfilDTO(nome: nome, curso: curso))
+        try await enviar("POST", Rota.usuarios, corpo: PerfilDTO(nome: nome, curso: curso))
     }
 
     func atualizarPerfil(nome: String, curso: String) async throws -> UsuarioDTO {
-        try await enviar("PUT", "hub/perfil", corpo: PerfilDTO(nome: nome, curso: curso))
+        try exigirUsuario()
+        return try await enviar("PUT", Rota.perfil, corpo: PerfilDTO(nome: nome, curso: curso))
     }
 
-    // MARK: Requisição
+    // MARK: Construção e execução da requisição
 
     private static let sessao: URLSession = {
         let configuracao = URLSessionConfiguration.default
@@ -192,49 +214,74 @@ struct APIClient {
         return URLSession(configuration: configuracao)
     }()
 
-    /// Lê as datas do servidor ("2026-11-09T16:02:00Z"), com ou sem milissegundos.
+    private static let codificador = JSONEncoder()
+
+    /// Aceita datas ISO 8601 UTC com ou sem milissegundos, como definido no contrato.
     private static let decodificador: JSONDecoder = {
         let decodificador = JSONDecoder()
         decodificador.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let texto = try container.decode(String.self)
-            if let data = DataISO.ler(texto) {
-                return data
+            guard let data = DataISO.ler(texto) else {
+                throw DecodingError.dataCorruptedError(
+                    in: container,
+                    debugDescription: "Data ISO 8601 inválida: \(texto)"
+                )
             }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Data inválida: \(texto)")
+            return data
         }
         return decodificador
     }()
+
+    /// Impede chamadas protegidas sem X-Hub-User, em vez de enviar uma requisição
+    /// que o backend certamente rejeitará com HTTP 401.
+    private func exigirUsuario() throws {
+        guard let usuarioID, !usuarioID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw ErroAPI.usuarioNaoIdentificado
+        }
+    }
 
     private func enviar<Resposta: Decodable>(
         _ metodo: String,
         _ caminho: String,
         corpo: (any Encodable)? = nil
     ) async throws -> Resposta {
-        var pedido = URLRequest(url: base.appending(path: caminho))
+        let url = base.appending(path: caminho)
+        var pedido = URLRequest(url: url)
         pedido.httpMethod = metodo
         pedido.setValue("application/json", forHTTPHeaderField: "Accept")
-        if let usuarioID {
+
+        if let usuarioID, !usuarioID.isEmpty {
             pedido.setValue(usuarioID, forHTTPHeaderField: "X-Hub-User")
         }
+
         if let corpo {
             pedido.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
-            pedido.httpBody = try JSONEncoder().encode(corpo)
+            pedido.httpBody = try Self.codificador.encode(corpo)
         }
 
         let (dados, resposta) = try await baixar(pedido)
         guard let http = resposta as? HTTPURLResponse else {
             throw ErroAPI.respostaInvalida
         }
+
         guard (200..<300).contains(http.statusCode) else {
             if http.statusCode == 401 {
                 throw ErroAPI.usuarioNaoIdentificado
             }
+
             let erro = try? JSONDecoder().decode(ErroDTO.self, from: dados)
-            let padrao = http.statusCode == 404
-                ? "Rota não encontrada (404). Confira se o fluxo do Hub Acadêmico foi importado e implantado no Node-RED."
-                : "O servidor respondeu com o erro \(http.statusCode)."
-            var mensagem = erro?.erro ?? padrao
+            let mensagemPadrao: String
+            switch http.statusCode {
+            case 404:
+                mensagemPadrao = "Rota não encontrada (404). Confira se o fluxo do Hub Acadêmico foi implantado no Node-RED."
+            case 503:
+                mensagemPadrao = "O serviço de publicações está temporariamente indisponível."
+            default:
+                mensagemPadrao = "O servidor respondeu com o erro HTTP \(http.statusCode)."
+            }
+
+            var mensagem = erro?.erro ?? mensagemPadrao
             if let detalhes = erro?.detalhes, !detalhes.isEmpty {
                 mensagem += "\n" + detalhes.joined(separator: "\n")
             }
@@ -258,7 +305,6 @@ struct APIClient {
         }
     }
 
-    /// Explica as falhas de rede mais comuns no laboratório.
     private static func dica(para erro: URLError) -> String {
         switch erro.code {
         case .notConnectedToInternet, .networkConnectionLost:
@@ -278,7 +324,7 @@ struct APIClient {
     }
 }
 
-/// Datas ISO 8601 do Node-RED.
+/// Datas ISO 8601 UTC retornadas pelo Node-RED.
 private enum DataISO {
     private static let simples: ISO8601DateFormatter = {
         let formato = ISO8601DateFormatter()
