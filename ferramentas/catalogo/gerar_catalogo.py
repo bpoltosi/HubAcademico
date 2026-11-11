@@ -10,7 +10,7 @@ Entradas (pasta dados/):
 Saídas (geradas; não edite à mão):
   HubAcademico/Modelos/CatalogoAreas.swift   subáreas de cada área
   HubAcademico/Recursos/materias-ufsm.json   matérias da UFSM por subárea (lido por CatalogoMaterias.swift)
-  docs/materias-por-subarea.csv              disciplinas por grande área e curso (Area; SubArea; Disciplina)
+  docs/disciplinas-por-curso-ufsm.csv              disciplinas por grande área e curso (Area; SubArea; Disciplina)
   backend/node-red/src/api.js                bloco SUBAREAS (validação da subárea na API) e,
                                              com o Node.js instalado, o fluxo hub-academico-flows.json
 
@@ -796,7 +796,7 @@ def main():
 
     docs = REPO / 'docs'
     docs.mkdir(exist_ok=True)
-    with open(docs / 'materias-por-subarea.csv', 'w', encoding='utf-8-sig', newline='') as f:
+    with open(docs / 'disciplinas-por-curso-ufsm.csv', 'w', encoding='utf-8-sig', newline='') as f:
         w = csv.writer(f, delimiter=';')
         w.writerow(['Area', 'SubArea', 'Disciplina'])
         for area, nome_area, subs in AREAS:

@@ -44,7 +44,7 @@ O app tem **3 telas de navegação e 1 sheet**, ou seja, **4 views programadas**
 
 Trocar a área limpa a subárea e a matéria; trocar a subárea limpa a matéria. A API do Node-RED confere se a subárea pertence à área.
 
-**Organização das disciplinas:** os arquivos-base do CTISM e da UFSM usam o mesmo formato CSV, com três colunas: `Area`, `SubArea` (curso) e `Disciplina`. No arquivo da UFSM, cada disciplina aparece associada a cada curso em que é ofertada; a área mantém a classificação de conhecimento utilizada pelo catálogo. No arquivo do CTISM, a área é `Educação Profissional e Tecnológica` e a subárea identifica o curso. A relação completa pode ser conferida em [`docs/materias-por-subarea.csv`](docs/materias-por-subarea.csv) e [`docs/cadeiras-ctism-verificadas.csv`](docs/cadeiras-ctism-verificadas.csv).
+**Organização das disciplinas:** os arquivos-base do CTISM e da UFSM usam o mesmo formato CSV, com três colunas: `Area`, `SubArea` (curso) e `Disciplina`. No arquivo da UFSM, cada disciplina aparece associada a cada curso em que é ofertada; a área mantém a classificação de conhecimento utilizada pelo catálogo. No arquivo do CTISM, a área é `Educação Profissional e Tecnológica` e a subárea identifica o curso. As bases separadas podem ser conferidas em [`docs/disciplinas-por-curso-ufsm.csv`](docs/disciplinas-por-curso-ufsm.csv) e [`docs/disciplinas-por-curso-ctism.csv`](docs/disciplinas-por-curso-ctism.csv); o consolidado está em [`docs/disciplinas-por-curso-ufsm-ctism.csv`](docs/disciplinas-por-curso-ufsm-ctism.csv).
 
 O app funciona **sozinho no aparelho** (modo demonstração) ou **ligado ao Node-RED**, que guarda as publicações, as cadeiras (matérias), os usuários e as avaliações de toda a turma. Veja [Banco de dados no Node-RED](#banco-de-dados-no-node-red).
 
@@ -116,7 +116,7 @@ docs/                            Imagens do design, diagrama do banco e a planil
 
 ### Atualizar o catálogo de áreas e matérias
 
-Os arquivos `CatalogoAreas.swift`, `materias-ufsm.json`, `docs/materias-por-subarea.csv` e a lista de subáreas da API são **gerados**. Para mudar a classificação de uma disciplina (ou usar uma planilha mais nova da UFSM), edite as regras ou os dados em `ferramentas/catalogo/` e rode, na raiz do repositório:
+Os arquivos `CatalogoAreas.swift`, `materias-ufsm.json`, `docs/disciplinas-por-curso-ufsm.csv` e a lista de subáreas da API são **gerados**. Para mudar a classificação de uma disciplina (ou usar uma planilha mais nova da UFSM), edite as regras ou os dados em `ferramentas/catalogo/` e rode, na raiz do repositório:
 
 ```bash
 python3 ferramentas/catalogo/gerar_catalogo.py
@@ -188,7 +188,7 @@ Pronto: o app registra os arquivos `.ttf` sozinho na abertura (`FontRegistry`), 
 - **Banco de provas:** publique provas somente com autorização do(a) professor(a) responsável (o app mostra esse aviso no cadastro e na lista).
 - **LGPD:** nomes de autores(as) são dados pessoais. Com o servidor ligado, definam consentimento, política de privacidade e quem atende pedidos de remoção (a API já tem a rota `DELETE`).
 - **Rede:** o `Config/HubAcademico-Info.plist` libera `http://` para o Node-RED do laboratório. Para publicar na App Store, usem HTTPS e retirem essa exceção.
-- **Catálogo de matérias:** a ligação disciplina → subárea foi feita por regras (nome e departamento) e pode ter casos discutíveis. Confiram a planilha `docs/materias-por-subarea.csv` com os(as) professores(as) e ajustem as regras do gerador quando preciso. Os currículos são da graduação da UFSM; matérias dos cursos técnicos que não estiverem lá podem ser digitadas.
+- **Catálogo de matérias:** a ligação disciplina → subárea foi feita por regras (nome e departamento) e pode ter casos discutíveis. Confiram a planilha `docs/disciplinas-por-curso-ufsm.csv` com os(as) professores(as) e ajustem as regras do gerador quando preciso. Os currículos são da graduação da UFSM; matérias dos cursos técnicos que não estiverem lá podem ser digitadas.
 - **Dados de exemplo:** nomes, notas, textos e matérias dos exemplos são fictícios. Os cursos são os da página oficial do CTISM.
 - **Atribuição:** as capas ilustradas de exemplo usam ícones do [Font Awesome Free](https://fontawesome.com/license/free) (CC BY 4.0).
 
