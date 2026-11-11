@@ -13,15 +13,12 @@ struct CabecalhoInstitucional: View {
                 Rectangle()
                     .fill(Color.white.opacity(0.28))
                     .frame(width: 1, height: 34)
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading) {
                     Text("Hub Acadêmico")
                         .font(Tipografia.fonteFixa(23, .medium))
                         .tracking(0.2)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                    Text("Repositório acadêmico do CTISM")
-                        .font(Tipografia.fonteFixa(11.5))
-                        .opacity(0.84)
                 }
                 .foregroundStyle(.white)
                 .accessibilityElement(children: .combine)
@@ -174,7 +171,6 @@ struct CampoBusca: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Buscar")
             }
-            BotaoBuscaIA()
         }
         .padding(.leading, 14)
         .padding(.trailing, 5)
@@ -194,39 +190,5 @@ struct CampoBusca: View {
                 focado = false
             }
         }
-    }
-}
-
-/// Liga/desliga a busca semântica (IA no próprio aparelho).
-struct BotaoBuscaIA: View {
-    @Environment(Router.self) private var router
-    @Environment(BuscaModel.self) private var busca
-
-    var body: some View {
-        let rotulo: String = router.estaNaBusca ? "IA" : "Busca IA"
-        let rotuloAcessivel: String = busca.usarIA ? "Desativar busca com IA" : "Ativar busca com IA"
-
-        Button {
-            if router.estaNaBusca {
-                busca.usarIA.toggle()
-            } else {
-                busca.tipo = nil
-                busca.usarIA = true
-                router.abrirBusca()
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 11, weight: .semibold))
-                Text(rotulo)
-            }
-            .font(Tipografia.fonteFixa(11.5, .medium))
-            .foregroundStyle(busca.usarIA ? Color.white : UFSM.azulSecundario)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(busca.usarIA ? UFSM.azulSecundario : UFSM.tinta, in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(rotuloAcessivel)
     }
 }
