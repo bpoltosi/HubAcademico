@@ -355,14 +355,16 @@ async function testarApi() {
         });
     });
 
-    await teste('GET /hub/subareas devolve as 8 áreas e as 104 subáreas da tabela do CNPq', async function () {
+    await teste('GET /hub/subareas devolve as 8 áreas e as 102 subáreas com disciplinas no catálogo da UFSM', async function () {
         const r = await nr.requisitar('GET', '/hub/subareas');
         assert.equal(r.status, 200);
         assert.deepEqual(Object.keys(r.corpo).sort(), ['agrarias', 'biologicas', 'engenharias', 'exatas', 'humanas',
             'linguisticaLetrasArtes', 'saude', 'sociaisAplicadas']);
         const todas = [].concat.apply([], Object.values(r.corpo));
-        assert.equal(todas.length, 104);
-        assert.equal(new Set(todas).size, 104, 'nomes únicos');
+        assert.equal(todas.length, 102);
+        assert.equal(new Set(todas).size, 102, 'nomes únicos');
+        assert.ok(!todas.includes('Educação/Orientação e Aconselhamento'));
+        assert.ok(!todas.includes('Engenharia Naval e Oceânica'));
         assert.ok(r.corpo.engenharias.includes('Engenharia de Produção'));
         assert.ok(r.corpo.agrarias.includes('Agronomia/Ciência do Solo'));
         assert.ok(r.corpo.saude.includes('Medicina/Medicina Legal e Deontologia'));
@@ -432,6 +434,14 @@ async function testarApi() {
             assert.ok(r.corpo.detalhes.some(function (d) { return d.startsWith(campo + ':'); }), campo);
         });
         assert.equal(Object.keys(nr.banco().projetos).length, 12, 'nada gravado');
+        r = await nr.requisitar('POST', '/hub/projetos', {
+            corpo: novoProjeto({ subarea: 'Engenharia Naval e Oceânica' }),
+            cabecalhos: { 'X-Hub-User': usuario.id }
+        });
+        assert.equal(r.status, 400);
+        assert.ok(r.corpo.detalhes.some(function (d) { return d.startsWith('subarea:'); }),
+            'subárea sem disciplinas no catálogo da UFSM deve ser rejeitada');
+        assert.equal(Object.keys(nr.banco().projetos).length, 12, 'subárea inválida não grava');
     });
 
     await teste('POST /hub/projetos grava, reaproveita a cadeira (sem diferenciar acento/maiúscula) e marca "meu"', async function () {
