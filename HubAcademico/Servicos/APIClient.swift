@@ -5,6 +5,7 @@ enum ErroAPI: LocalizedError {
     case semConexao(String)
     case servidor(status: Int, mensagem: String)
     case usuarioNaoIdentificado
+    case recursoNaoSuportado(String)
     case respostaInvalida
 
     var errorDescription: String? {
@@ -15,13 +16,15 @@ enum ErroAPI: LocalizedError {
             return mensagem
         case .usuarioNaoIdentificado:
             return "O servidor não reconheceu o seu perfil. No cadastro, toque no cartão “Publicando como…” e depois em Concluir."
+        case .recursoNaoSuportado(let detalhe):
+            return detalhe
         case .respostaInvalida:
             return "O servidor respondeu em um formato inesperado. Confira se o fluxo do Hub Acadêmico está implantado no Node-RED."
         }
     }
 }
 
-// MARK: - Formatos da API (veja backend/node-red/README.md)
+// MARK: - Formatos da API CloudantPlus
 
 /// Projeto como vem do Node-RED. A coluna "cadeira" do banco é a "matéria" do app.
 struct ProjetoDTO: Decodable {
@@ -45,7 +48,7 @@ struct ProjetoDTO: Decodable {
     let meu: Bool?
     let criadoEm: Date?
 
-    /// Converte para o modelo do app; devolve `nil` se o tipo, a área ou o id não forem reconhecidos.
+    /// Converte para o modelo do app; devolve nil se o tipo, a área ou o id não forem reconhecidos.
     var producao: Producao? {
         guard let uuid = UUID(uuidString: id),
               let tipoProducao = TipoProducao(rawValue: tipo),
@@ -75,7 +78,7 @@ struct ProjetoDTO: Decodable {
     }
 }
 
-/// Corpo do POST /hub/projetos.
+/// Corpo enviado para POSTprojeto.
 struct NovoProjetoDTO: Encodable {
     let tipo: String
     let titulo: String
@@ -108,7 +111,7 @@ struct NovoProjetoDTO: Encodable {
     }
 }
 
-/// Resposta do POST /hub/avaliacoes.
+/// Resposta de UPDATEprojeto quando a operação é uma avaliação.
 struct ResumoAvaliacaoDTO: Decodable {
     let projetoId: String
     let nota: Double
@@ -116,14 +119,20 @@ struct ResumoAvaliacaoDTO: Decodable {
     let minhaNota: Int?
 }
 
-/// Usuário (tabela users). O `id` identifica este aparelho no servidor.
+/// Resposta de DELETEprojeto.
+struct ExclusaoProjetoDTO: Decodable {
+    let ok: Bool
+    let removido: String?
+}
+
+/// Usuário lógico deste aparelho. O fluxo atual devolve o UUID; não mantém perfil no Cloudant.
 struct UsuarioDTO: Decodable {
     let id: String
     let nome: String
     let curso: String?
 }
 
-/// Resposta do GET /hub/status.
+/// Resposta do GET /hub/status. A rota não existe no fluxo CloudantPlus atual.
 struct StatusDTO: Decodable {
     struct Totais: Decodable {
         let projetos: Int
@@ -152,35 +161,66 @@ private struct PerfilDTO: Encodable {
 
 // MARK: - Cliente
 
-/// Cliente da API REST do Hub Acadêmico no Node-RED.
+/// Cliente REST do fluxo Node-RED baseado nos nós cloudantplus in/out.
+/// Os caminhos abaixo correspondem aos nós HTTP do flows.json real.
 struct APIClient {
-    /// Endereço do Node-RED, ex.: http://192.168.0.10:1880 (as rotas ficam em /hub/...).
+    /// Endereço do Node-RED, ex.: http://192.168.0.10:1880.
     let base: URL
-    /// Id do usuário, enviado no cabeçalho `X-Hub-User`.
+    /// UUID do usuário lógico, enviado no cabeçalho X-Hub-User.
     var usuarioID: String?
 
+    /// O fluxo fornecido não declara uma rota de status.
     func status() async throws -> StatusDTO {
-        try await enviar("GET", "hub/status")
+        throw ErroAPI.recursoNaoSuportado(
+            "O fluxo CloudantPlus atual não disponibiliza GET /hub/status."
+        )
     }
 
+    /// GETprojetos consulta os documentos do banco hub-academico-10.
     func projetos() async throws -> [ProjetoDTO] {
-        try await enviar("GET", "hub/projetos")
+        try await enviar("GET", "GETprojetos")
     }
 
+    /// POSTprojeto insere um documento com _id UUID e campos compatíveis com ProjetoDTO.
     func publicar(_ novo: NovoProjetoDTO) async throws -> ProjetoDTO {
-        try await enviar("POST", "hub/projetos", corpo: novo)
+        try await enviar("POST", "POSTprojeto", corpo: novo)
     }
 
+    /// UPDATEprojeto recebe projetoId + nota e atualiza votos no documento existente.
     func avaliar(projetoID: UUID, nota: Int) async throws -> ResumoAvaliacaoDTO {
-        try await enviar("POST", "hub/avaliacoes", corpo: NotaDTO(projetoId: projetoID.uuidString, nota: nota))
+        try await enviar(
+            "PUT",
+            "UPDATEprojeto",
+            corpo: NotaDTO(projetoId: projetoID.uuidString, nota: nota)
+        )
+    }
+
+    /// DELETEprojeto recebe o identificador pela query string.
+    func excluirProjeto(projetoID: UUID) async throws -> ExclusaoProjetoDTO {
+        guard var componentes = URLComponents(
+            url: base.appending(path: "DELETEprojeto"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw ErroAPI.respostaInvalida
+        }
+        componentes.queryItems = [URLQueryItem(name: "id", value: projetoID.uuidString)]
+        guard let url = componentes.url else {
+            throw ErroAPI.respostaInvalida
+        }
+        return try await enviar("DELETE", url: url)
+    }
+
+    /// O fluxo cria um UUID lógico em POST /hub/users, mas não armazena nome/curso.
+    /// Como não existe PUT /hub/perfil nesse fluxo, mantém o perfil local sem enviar uma rota inexistente.
+    func atualizarPerfil(nome: String, curso: String) async throws -> UsuarioDTO {
+        guard let usuarioID else {
+            throw ErroAPI.usuarioNaoIdentificado
+        }
+        return UsuarioDTO(id: usuarioID, nome: nome, curso: curso)
     }
 
     func cadastrarUsuario(nome: String, curso: String) async throws -> UsuarioDTO {
         try await enviar("POST", "hub/users", corpo: PerfilDTO(nome: nome, curso: curso))
-    }
-
-    func atualizarPerfil(nome: String, curso: String) async throws -> UsuarioDTO {
-        try await enviar("PUT", "hub/perfil", corpo: PerfilDTO(nome: nome, curso: curso))
     }
 
     // MARK: Requisição
@@ -192,7 +232,7 @@ struct APIClient {
         return URLSession(configuration: configuracao)
     }()
 
-    /// Lê as datas do servidor ("2026-11-09T16:02:00Z"), com ou sem milissegundos.
+    /// Lê datas ISO 8601 do Node-RED, com ou sem milissegundos.
     private static let decodificador: JSONDecoder = {
         let decodificador = JSONDecoder()
         decodificador.dateDecodingStrategy = .custom { decoder in
@@ -201,7 +241,10 @@ struct APIClient {
             if let data = DataISO.ler(texto) {
                 return data
             }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Data inválida: \(texto)")
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Data inválida: \(texto)"
+            )
         }
         return decodificador
     }()
@@ -211,7 +254,15 @@ struct APIClient {
         _ caminho: String,
         corpo: (any Encodable)? = nil
     ) async throws -> Resposta {
-        var pedido = URLRequest(url: base.appending(path: caminho))
+        try await enviar(metodo, url: base.appending(path: caminho), corpo: corpo)
+    }
+
+    private func enviar<Resposta: Decodable>(
+        _ metodo: String,
+        url: URL,
+        corpo: (any Encodable)? = nil
+    ) async throws -> Resposta {
+        var pedido = URLRequest(url: url)
         pedido.httpMethod = metodo
         pedido.setValue("application/json", forHTTPHeaderField: "Accept")
         if let usuarioID {
@@ -232,7 +283,7 @@ struct APIClient {
             }
             let erro = try? JSONDecoder().decode(ErroDTO.self, from: dados)
             let padrao = http.statusCode == 404
-                ? "Rota não encontrada (404). Confira se o fluxo do Hub Acadêmico foi importado e implantado no Node-RED."
+                ? "Rota ou documento não encontrado (404). Confira se o fluxo CloudantPlus está implantado no Node-RED."
                 : "O servidor respondeu com o erro \(http.statusCode)."
             var mensagem = erro?.erro ?? padrao
             if let detalhes = erro?.detalhes, !detalhes.isEmpty {
