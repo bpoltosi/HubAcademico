@@ -71,12 +71,8 @@ final class BuscaModel {
     var texto = ""
     /// Escopo da busca: um tipo (quando se entra por um atalho do Início) ou todos (`nil`).
     var tipo: TipoProducao?
-    var usarIA = false
     var mostrarFiltros = false
     var filtros = FiltrosBusca()
-
-    /// Busca semântica no próprio aparelho (framework NaturalLanguage da Apple).
-    let motor = BuscaInteligente()
 
     func limparFiltros() {
         filtros = FiltrosBusca()
