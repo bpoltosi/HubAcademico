@@ -168,11 +168,6 @@ extension Producao {
         autores.formatted(.list(type: .and).locale(Locale(identifier: "pt_BR")))
     }
 
-    /// Texto usado pela busca semântica.
-    var textoSemantico: String {
-        let subareaTexto = subarea.map { Subarea.legivel($0) + ". " } ?? ""
-        return "\(titulo). \(descricao) \(materia). \(subareaTexto)\(area.nome)."
-    }
 }
 
 /// Subáreas no formato da tabela do CNPq: "Agronomia/Ciência do Solo" é a subárea
