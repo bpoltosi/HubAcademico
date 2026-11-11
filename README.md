@@ -74,7 +74,7 @@ O app já vem com **12 publicações fictícias** de exemplo e com os **17 curso
 O endereço do servidor fica nos **Ajustes do iPhone**, fora do app (o ☰ agora só volta ao Início):
 
 - **Ajustes › Apps › Hub Acadêmico › Endereço** (no iOS 17: **Ajustes › Hub Acadêmico**).
-- Ex.: `localhost:1880` no simulador, `192.168.0.10:1880` no iPhone (IP do Mac do laboratório) ou `https://seu-node-red`.
+- Endereço-base padrão: `http://127.0.0.1:1880/` (pode ser alterado nos Ajustes se necessário).
 - Campo em branco: o app usa só os dados guardados no aparelho. A mudança vale quando você volta ao app.
 
 Para a turma toda já abrir ligada ao servidor, preencha `HubServidorURL` em `Config/HubAcademico-Info.plist` antes de compilar: na primeira abertura, o endereço é copiado para os Ajustes, onde pode ser trocado. Se o endereço digitado nos Ajustes for inválido, a busca mostra um aviso e o app continua com os dados do aparelho.
@@ -129,7 +129,7 @@ A pasta [`backend/node-red`](backend/node-red) tem o fluxo pronto para importar,
 1. Rode o Node-RED (`npm install -g --unsafe-perm node-red` e depois `node-red`).
 2. No `~/.node-red/settings.js`, ative `contextStorage: { default: { module: "localfilesystem" } }` para os dados não sumirem ao reiniciar.
 3. No editor (http://localhost:1880), use ☰ › **Import** › `backend/node-red/hub-academico-flows.json` e clique em **Deploy**.
-4. No iPhone ou simulador: **Ajustes › Apps › Hub Acadêmico › Endereço** › `localhost:1880` (simulador) ou `IP-DO-MAC:1880` (iPhone). Volte ao app.
+4. No iPhone ou simulador: **Ajustes › Apps › Hub Acadêmico › Endereço** › `http://127.0.0.1:1880/`. Volte ao app.
 
 O passo a passo completo, o diagrama das tabelas, as rotas com exemplos em `curl`, a moderação e os testes estão em [`backend/node-red/README.md`](backend/node-red/README.md).
 
