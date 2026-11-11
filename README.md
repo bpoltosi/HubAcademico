@@ -44,7 +44,7 @@ O app tem **3 telas de navegação e 1 sheet**, ou seja, **4 views programadas**
 
 Trocar a área limpa a subárea e a matéria; trocar a subárea limpa a matéria. A API do Node-RED confere se a subárea pertence à área.
 
-**Como as matérias foram ligadas às subáreas:** pelo **assunto** de cada disciplina (nome e departamento). Ex.: *Genética Molecular e de Microrganismos* → Genética, mesmo sendo dada nos cursos de Agronomia e de Medicina Veterinária. As disciplinas sem assunto próprio (TCC, estágio, tópicos especiais) ficam na subárea do curso. A classificação completa, para conferência, está em [`docs/materias-por-subarea.csv`](docs/materias-por-subarea.csv) (abre no Excel). Duas subáreas não têm disciplina correspondente nos currículos da UFSM: *Educação/Orientação e Aconselhamento* e *Engenharia Naval e Oceânica*; nelas, a matéria é digitada.
+**Organização das disciplinas:** os arquivos-base do CTISM e da UFSM usam o mesmo formato CSV, com três colunas: `Area`, `SubArea` (curso) e `Disciplina`. No arquivo da UFSM, cada disciplina aparece associada a cada curso em que é ofertada; a área mantém a classificação de conhecimento utilizada pelo catálogo. No arquivo do CTISM, a área é `Educação Profissional e Tecnológica` e a subárea identifica o curso. A relação completa pode ser conferida em [`docs/materias-por-subarea.csv`](docs/materias-por-subarea.csv) e [`docs/cadeiras-ctism-verificadas.csv`](docs/cadeiras-ctism-verificadas.csv).
 
 O app funciona **sozinho no aparelho** (modo demonstração) ou **ligado ao Node-RED**, que guarda as publicações, as cadeiras (matérias), os usuários e as avaliações de toda a turma. Veja [Banco de dados no Node-RED](#banco-de-dados-no-node-red).
 
