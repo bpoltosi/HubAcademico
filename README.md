@@ -13,6 +13,35 @@ Desenvolvido no **HackaTruck MakerSpace** (Instituto de Pesquisas Eldorado), Dep
 
 > Prancha completa com o design system: [`docs/visao-geral-design-system.png`](docs/visao-geral-design-system.png)
 
+
+---
+
+## Demonstração do projeto
+
+Assista ao vídeo curto de demonstração do Hub Acadêmico:
+
+<p align="center">
+  <a href="https://youtube.com/shorts/udhRR2JujOk">
+    <img src="https://img.youtube.com/vi/udhRR2JujOk/hqdefault.jpg" width="360" alt="Assistir à demonstração do Hub Acadêmico no YouTube">
+  </a>
+</p>
+
+[Assistir à demonstração no YouTube](https://youtube.com/shorts/udhRR2JujOk).
+
+---
+
+## Guia rápido: como usar o aplicativo
+
+1. **Comece pela tela Início.** Escolha **Projetos**, **Trabalhos acadêmicos**, **Banco de provas** ou **Material complementar** para abrir a lista daquele tipo. O cartão **Publique o seu projeto** abre o formulário de publicação.
+2. **Encontre uma publicação.** Use a busca no cabeçalho para procurar por título, autor, área, subárea ou disciplina. Toque no ícone de filtro para combinar critérios. Toque em um resultado para abrir a visualização, consultar os detalhes, acessar o link original, compartilhar ou avaliar com as estrelas.
+3. **Publique um conteúdo.** No formulário, escolha Projeto, Trabalho ou Prova e preencha os campos obrigatórios. Selecione primeiro a **Área**, depois a **Subárea** e a **Disciplina**. Informe a instituição e o ano. No cartão **Publicando como…**, complete seu nome e curso em **Meu perfil** e toque em **Concluir**. Use **Salvar rascunho** para continuar depois ou **Publicar** para enviar.
+4. **Escolha o modo de funcionamento.**
+   - **Demonstração local:** deixe o link do servidor em branco. O aplicativo usa os dados de exemplo e salva as alterações somente no aparelho.
+   - **Compartilhado pela turma:** configure o Node-RED com o Cloudant e informe o endereço do computador/servidor nos Ajustes do iPhone, conforme a seção [Ligar ao servidor Node-RED](#ligar-ao-servidor-node-red).
+
+> **Atenção:** publique provas somente com autorização do(a) professor(a) responsável pela disciplina.
+
+
 ---
 
 ## Funcionalidades
@@ -71,15 +100,37 @@ O app já vem com **12 publicações fictícias** de exemplo e com os **17 curso
 
 ### Ligar ao servidor Node-RED
 
-O link do servidor fica nos **Ajustes do iPhone**, fora do app (o ☰ agora só volta ao Início):
+O endereço do servidor é configurado nos **Ajustes do iPhone**, fora do aplicativo:
 
 - **Ajustes › Apps › Hub Acadêmico › Link do servidor** (no iOS 17: **Ajustes › Hub Acadêmico**).
-- Ex.: `localhost:1880` no simulador, `192.168.0.10:1880` no iPhone (IP do Mac do laboratório) ou `https://seu-node-red`.
-- Campo em branco: o app usa só os dados guardados no aparelho. A mudança vale quando você volta ao app.
+- Informe o endereço do computador onde o Node-RED está executando, seguido da porta `:1880` (por exemplo, `192.168.0.10:1880`).
+- Depois de alterar o campo, volte ao Hub Acadêmico para aplicar a configuração.
 
-Para a turma toda já abrir ligada ao servidor, preencha `HubServidorLink` em `Config/HubAcademico-Info.plist` antes de compilar: na primeira abertura, o link é copiado para os Ajustes, onde pode ser trocado. Se o link digitado nos Ajustes for inválido, a busca mostra um aviso e o app continua com os dados do aparelho.
+**O endereço IP não é fixo.** O valor de `HubServidorLink` em `Config/HubAcademico-Info.plist` é apenas o endereço padrão configurado para o ambiente em que o projeto foi preparado. Se o Node-RED for executado em outro computador, se a rede Wi-Fi mudar ou se o roteador atribuir outro IP, atualize o endereço antes de conectar o iPhone.
 
-> Em alguns simuladores recentes, a página do app pode não aparecer nos Ajustes. Nesse caso, use o `HubServidorLink` do Info.plist.
+Para descobrir o IP atual do computador que executa o Node-RED:
+
+- **macOS:** abra o Terminal e execute `ipconfig getifaddr en0` (interface Wi-Fi mais comum).
+- **Windows:** execute `ipconfig` no Prompt de Comando e procure **Endereço IPv4** no adaptador Wi-Fi ou Ethernet que está conectado à mesma rede.
+
+Use o endereço encontrado da seguinte forma:
+
+| Onde o app está rodando | Endereço do servidor |
+|---|---|
+| Simulador do Xcode no mesmo Mac do Node-RED | `localhost:1880` |
+| iPhone conectado à mesma rede do computador | `IP-DO-COMPUTADOR:1880` (ex.: `192.168.0.10:1880`) |
+| Node-RED hospedado na nuvem | `https://seu-node-red` |
+
+> **Importante:** no iPhone físico, não use `localhost`: esse endereço aponta para o próprio iPhone, não para o computador. O iPhone e o computador com Node-RED precisam estar na mesma rede local para usar o IP privado.
+
+Há duas maneiras de configurar o endereço:
+
+1. **No app já instalado:** altere **Link do servidor** nos Ajustes do iPhone, usando o IP atual do computador.
+2. **Como valor padrão de uma nova compilação:** atualize a string da chave `HubServidorLink` em `Config/HubAcademico-Info.plist` antes de compilar. Na primeira abertura, esse valor é copiado para os Ajustes e pode ser alterado pela pessoa que usa o app.
+
+Se o campo ficar em branco, o aplicativo funciona em **modo demonstração**, usando e salvando os dados somente no aparelho. Se o endereço informado for inválido ou o servidor estiver indisponível, a busca mostra um aviso e mantém a última cópia local.
+
+> Em alguns simuladores recentes, a página do app pode não aparecer nos Ajustes. Nesse caso, configure o valor padrão em `Config/HubAcademico-Info.plist` antes de compilar.
 
 ---
 
