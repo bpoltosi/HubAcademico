@@ -31,7 +31,7 @@ O fluxo usa os nós do núcleo do Node-RED e o pacote **cloudantplus**, o mesmo 
 
 1. No computador que executa o Node-RED, abra o editor em `http://localhost:1880`.
 2. Baixe [`NodeRed-Flow-Final.json`](NodeRed-Flow-Final.json) do repositório. No editor, abra ☰ › **Import** › **select a file to import**, escolha o JSON e confirme a importação.
-3. O arquivo já inclui o nó de configuração `cloudantplus` usado pelas rotas. Abra ☰ › **Configuration nodes** › **cloudantplus` e informe a **API key** em IBM Cloud › Resource list › Cloudant › **Service credentials** › `apikey`. A chave não está dentro do JSON.
+3. O arquivo já inclui o nó de configuração `cloudantplus` usado pelas rotas. Abra ☰ › **Configuration nodes** › `cloudantplus` e informe a **API key** em IBM Cloud › Resource list › Cloudant › **Service credentials** › `apikey`. A chave não está dentro do JSON.
 4. Clique em **Update** e em **Deploy**. Deve aparecer a aba **Hub Acadêmico – Cloudant**; na barra de depuração (🐞), procure *“Cloudant conectado: …”*.
 5. Se o banco não tiver nenhuma publicação, as 12 publicações de exemplo são criadas automaticamente.
 
