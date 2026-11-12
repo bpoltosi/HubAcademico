@@ -1,0 +1,1738 @@
+[
+    {
+        "id": "ff3f71c0b29878ed",
+        "type": "tab",
+        "label": "Hub Acadêmico – Cloudant",
+        "disabled": false,
+        "info": "### Hub Acadêmico – API e banco no Cloudant\n\nApp iOS do HackaTruck (CTISM/UFSM). As rotas seguem o padrão GET/POST/UPDATE/DELETE + nome, como no fluxo da equipe.\n\n**Banco:** Cloudant `hub-academico-10`. Cada documento tem o campo `colecao`:\n\n| colecao | campos |\n|---|---|\n| publicacao | _id, tipo, titulo, descricao, autores, ano, area, subarea, disciplina, curso, instituicao, link, plataforma, imagemLink, usuarioId, criadoEm |\n| avaliacao | _id, publicacaoId, usuarioId, nota |\n| usuario | _id, nome, curso |\n\nA média (`media`) e o total de avaliações (`totalAvaliacoes`) de cada publicação são calculados a partir das avaliações.\n\n**Para funcionar:** os nós do Cloudant usam a configuração `5ac37d22a9baf72b` (host do Cloudant da equipe + API key). Se o Node-RED ainda não tem essa configuração, importe também `cloudant-config.json` e cole a API key nela.\n\nModeração: defina a variável de ambiente `HUB_MODERACAO_TOKEN` e envie o mesmo valor no cabeçalho `X-Hub-Moderacao`.\n\nDocumentação completa: `backend/node-red/README.md` no repositório.",
+        "env": []
+    },
+    {
+        "id": "99dbba625fb62fbb",
+        "type": "comment",
+        "z": "ff3f71c0b29878ed",
+        "name": "API REST do Hub Acadêmico · rotas GET/POST/UPDATE/DELETE + nome · banco Cloudant hub-academico-10",
+        "info": "Cada rota: **http in → function → cloudantplus → … → http response**.\n\nO app envia o id do usuário no cabeçalho `X-Hub-Usuario`. Esse id não aparece nas respostas públicas.\nErros do Cloudant caem no nó **catch** e voltam ao app como JSON `{ \"erro\": \"…\", \"detalhes\": [] }`.\n\n| método | rota | uso |\n|---|---|---|\n| GET | /GETstatus | teste de conexão e totais |\n| GET | /GETpublicacoes | lista (filtros: tipo, ano, area, subarea, curso, disciplina, titulo, autor, q, ordem=media, limite) |\n| POST | /POSTpublicacao | publica (precisa de X-Hub-Usuario) |\n| PUT | /UPDATEpublicacao | altera (?id=…; quem publicou ou X-Hub-Moderacao) |\n| DELETE | /DELETEpublicacao | remove (?id=…; quem publicou ou X-Hub-Moderacao) |\n| POST | /POSTavaliacao | nota de 1 a 5; avaliar de novo troca a nota (X-Hub-Usuario) |\n| POST | /POSTusuario | cadastra o usuário e devolve o id |\n| GET | /GETusuario | dados do usuário do cabeçalho X-Hub-Usuario |\n| PUT | /UPDATEusuario | altera nome e curso (X-Hub-Usuario) |\n| GET | /GETdisciplinas | disciplinas usadas, com o total de publicações |\n| GET | /GETsubareas | subáreas de cada área (tabela do CNPq) |",
+        "x": 420,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "51b613327f07fdc4",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Get Status [GETstatus]",
+        "url": "/GETstatus",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "670713c23ac3c082"
+            ]
+        ]
+    },
+    {
+        "id": "43ae3feebb508d3a",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Get Status",
+        "statusCode": "",
+        "headers": {},
+        "x": 1120,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "670713c23ac3c082",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Conta documentos",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== status-consulta\n// GET /GETstatus (e o teste de conexão ao implantar): conta os documentos de cada coleção.\nreturn consultar({ colecao: { $in: ['publicacao', 'avaliacao', 'usuario'] } }, ['_id', 'colecao', 'publicacaoId', 'disciplina']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 100,
+        "wires": [
+            [
+                "cb366e7a991867af"
+            ]
+        ]
+    },
+    {
+        "id": "cb366e7a991867af",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta o banco",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 100,
+        "wires": [
+            [
+                "059b743fee136a2c"
+            ]
+        ]
+    },
+    {
+        "id": "059b743fee136a2c",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction normalizar(valor) {\n    return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== status-resposta\nconst lista = documentos(msg.payload);\nconst publicacoes = {};\nconst disciplinas = {};\nconst avaliacoes = [];\nlet usuarios = 0;\nlista.forEach(function (d) {\n    if (d.colecao === 'publicacao') {\n        publicacoes[idDe(d._id)] = true;\n        const nome = normalizar(d.disciplina);\n        if (nome) disciplinas[nome] = true;\n    } else if (d.colecao === 'avaliacao') {\n        avaliacoes.push(d);\n    } else if (d.colecao === 'usuario') {\n        usuarios += 1;\n    }\n});\nconst totais = {\n    publicacoes: Object.keys(publicacoes).length,\n    disciplinas: Object.keys(disciplinas).length,\n    usuarios: usuarios,\n    // avaliações de publicações que já foram removidas não contam\n    avaliacoes: avaliacoes.filter(function (a) { return publicacoes[idDe(a.publicacaoId)]; }).length\n};\nnode.status({ fill: 'green', shape: 'dot', text: totais.publicacoes + ' publicações · ' + totais.usuarios + ' usuários' });\nreturn responder(200, { ok: true, servico: 'Hub Acadêmico', banco: 'Cloudant', horario: agora(), totais: totais });\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 100,
+        "wires": [
+            [
+                "43ae3feebb508d3a"
+            ]
+        ]
+    },
+    {
+        "id": "93b650920a05a91e",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Get Publicações [GETpublicacoes]",
+        "url": "/GETpublicacoes",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 170,
+        "wires": [
+            [
+                "364d3661af403713"
+            ]
+        ]
+    },
+    {
+        "id": "b934f7aa96b7f62a",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Get Publicações",
+        "statusCode": "",
+        "headers": {},
+        "x": 1600,
+        "y": 170,
+        "wires": []
+    },
+    {
+        "id": "364d3661af403713",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta publicações",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== publicacoes-consulta\n// GET /GETpublicacoes — 1) busca as publicações.\n// Filtros opcionais (na URL): tipo, ano, area, subarea, curso, disciplina (ou cadeira), titulo, autor, q,\n// ordem=media e limite. Sem filtros, devolve todas, das mais recentes para as mais antigas.\nreturn consultar({ colecao: 'publicacao' });\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 170,
+        "wires": [
+            [
+                "13e92839a01a8436"
+            ]
+        ]
+    },
+    {
+        "id": "13e92839a01a8436",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca publicações",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 170,
+        "wires": [
+            [
+                "fac0579bc8b5a70f"
+            ]
+        ]
+    },
+    {
+        "id": "fac0579bc8b5a70f",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta avaliações",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== publicacoes-avaliacoes\n// 2) guarda as publicações e busca as avaliações, para calcular média e total.\nmsg.publicacoes = documentos(msg.payload);\nreturn consultar({ colecao: 'avaliacao' }, ['publicacaoId', 'usuarioId', 'nota']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 170,
+        "wires": [
+            [
+                "d2b73b13b5b7acbf"
+            ]
+        ]
+    },
+    {
+        "id": "d2b73b13b5b7acbf",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca avaliações",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 1120,
+        "y": 170,
+        "wires": [
+            [
+                "46a2f9ee09af8220"
+            ]
+        ]
+    },
+    {
+        "id": "46a2f9ee09af8220",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Filtra e monta a lista",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst TIPOS = ['projeto', 'trabalho', 'prova', 'material'];\n\n// Subáreas de cada grande área (tabela do CNPq; a mesma lista do app em CatalogoAreas.swift).\n// Bloco gerado por ferramentas/catalogo/gerar_catalogo.py: não edite à mão.\nconst SUBAREAS = {\n    exatas: ['Astronomia', 'Ciência da Computação', 'Física', 'Geociências', 'Matemática', 'Oceanografia', 'Probabilidade e Estatística', 'Química'],\n    agrarias: ['Agronomia/Agrometeorologia', 'Agronomia/Ciência do Solo', 'Agronomia/Extensão Rural', 'Agronomia/Fitossanidade', 'Agronomia/Fitotecnia', 'Agronomia/Floricultura, Parques e Jardins', 'Ciência e Tecnologia de Alimentos/Ciência de Alimentos', 'Ciência e Tecnologia de Alimentos/Engenharia de Alimentos', 'Ciência e Tecnologia de Alimentos/Tecnologia de Alimentos', 'Engenharia Agrícola', 'Medicina Veterinária/Clínica e Cirurgia Animal', 'Medicina Veterinária/Inspeção de Produtos de Origem Animal', 'Medicina Veterinária/Medicina Veterinária Preventiva', 'Medicina Veterinária/Patologia Animal', 'Medicina Veterinária/Reprodução Animal', 'Recursos Florestais e Engenharia Florestal', 'Recursos Pesqueiros e Engenharia de Pesca', 'Zootecnia/Ecologia dos Animais Domésticos e Etologia', 'Zootecnia/Genética e Melhoramento dos Animais Domésticos', 'Zootecnia/Nutrição e Alimentação Animal', 'Zootecnia/Pastagem e Forragicultura', 'Zootecnia/Produção Animal'],\n    biologicas: ['Biofísica', 'Biologia Geral', 'Bioquímica', 'Botânica', 'Ecologia', 'Farmacologia', 'Fisiologia', 'Genética', 'Imunologia', 'Microbiologia', 'Morfologia', 'Parasitologia', 'Zoologia'],\n    saude: ['Educação Física', 'Enfermagem', 'Farmácia', 'Fisioterapia e Terapia Ocupacional', 'Fonoaudiologia', 'Medicina/Clínica Médica', 'Medicina/Cirurgia', 'Medicina/Saúde Materno-Infantil', 'Medicina/Psiquiatria', 'Medicina/Anatomia Patológica e Patologia Clínica', 'Medicina/Radiologia Médica', 'Medicina/Medicina Legal e Deontologia', 'Nutrição', 'Odontologia', 'Saúde Coletiva'],\n    humanas: ['Antropologia', 'Arqueologia', 'Ciência Política', 'Educação/Fundamentos da Educação', 'Educação/Administração Educacional', 'Educação/Planejamento e Avaliação Educacional', 'Educação/Ensino-Aprendizagem', 'Educação/Currículo', 'Educação/Orientação e Aconselhamento', 'Educação/Tópicos Especiais em Educação', 'Filosofia', 'Geografia', 'História', 'Psicologia', 'Sociologia'],\n    sociaisAplicadas: ['Administração', 'Arquitetura e Urbanismo', 'Arquivologia', 'Comunicação', 'Demografia', 'Desenho Industrial', 'Direito', 'Economia', 'Planejamento Urbano e Regional', 'Serviço Social', 'Turismo'],\n    engenharias: ['Engenharia Acústica', 'Engenharia Aeroespacial', 'Engenharia Biomédica', 'Engenharia Civil', 'Engenharia de Materiais e Metalúrgica', 'Engenharia de Minas', 'Engenharia de Produção', 'Engenharia de Transportes', 'Engenharia Elétrica', 'Engenharia Mecânica', 'Engenharia Naval e Oceânica', 'Engenharia Nuclear', 'Engenharia Química', 'Engenharia Sanitária'],\n    linguisticaLetrasArtes: ['Artes/Artes Plásticas', 'Artes/Dança', 'Artes/Música', 'Artes/Teatro', 'Letras', 'Linguística'],\n};\n\nconst AREAS = Object.keys(SUBAREAS);\n\nconst PLATAFORMAS = ['linkedin', 'instagram', 'blog', 'youtube', 'github', 'outro'];\n\nconst FORMATO_ID = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/;\n\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction normalizar(valor) {\n    return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\nfunction parametro(nome) {\n    const valor = ((msg.req && msg.req.query) || {})[nome];\n    if (Array.isArray(valor)) return String(valor[0] || '').trim();\n    return valor === undefined || valor === null ? '' : String(valor).trim();\n}\n\nfunction usuarioInformado() {\n    return idDe(cabecalho('x-hub-usuario'));\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n/** Soma, total e a nota do usuário informado, por publicação. */\nfunction totaisDeAvaliacao(avaliacoes, usuarioId) {\n    const t = {};\n    avaliacoes.forEach(function (a) {\n        const nota = Number(a.nota);\n        if (!(nota >= 1 && nota <= 5)) return;\n        const chave = idDe(a.publicacaoId);\n        const x = t[chave] || (t[chave] = { soma: 0, total: 0, minhaNota: null });\n        x.soma += nota;\n        x.total += 1;\n        if (usuarioId && idDe(a.usuarioId) === usuarioId) x.minhaNota = nota;\n    });\n    return t;\n}\n\n/** A publicação tem o que o app precisa para mostrá-la? (documentos de outros testes ficam de fora) */\nfunction publicacaoValida(p) {\n    return !!p && FORMATO_ID.test(idDe(p._id)) && TIPOS.indexOf(p.tipo) >= 0 && AREAS.indexOf(p.area) >= 0 &&\n        typeof p.titulo === 'string' && typeof p.descricao === 'string' && Number.isInteger(Number(p.ano));\n}\n\n/** Formato público de uma publicação (sem o id de quem publicou). */\nfunction apresentar(p, totais, usuarioId) {\n    const base = p.avaliacoesBase || {};\n    const t = totais || { soma: 0, total: 0, minhaNota: null };\n    const soma = (Number(base.soma) || 0) + t.soma;\n    const total = (Number(base.total) || 0) + t.total;\n    return {\n        id: idDe(p._id),\n        tipo: p.tipo,\n        titulo: p.titulo,\n        descricao: p.descricao,\n        imagemLink: p.imagemLink || null,\n        link: p.link || null,\n        plataforma: PLATAFORMAS.indexOf(p.plataforma) >= 0 ? p.plataforma : 'outro',\n        area: p.area,\n        subarea: p.subarea || null,\n        disciplina: p.disciplina || p.cadeira || '',\n        curso: p.curso || '',\n        instituicao: p.instituicao || '',\n        ano: Number(p.ano),\n        autores: Array.isArray(p.autores) ? p.autores.map(String) : [],\n        media: total ? Math.round((soma / total) * 100) / 100 : 0,\n        totalAvaliacoes: total,\n        minhaNota: t.minhaNota,\n        meu: !!usuarioId && idDe(p.usuarioId) === usuarioId,\n        criadoEm: p.criadoEm || agora()\n    };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== publicacoes-resposta\n// 3) monta a lista no formato do app, aplica os filtros e ordena.\nconst usuarioId = usuarioInformado();\nconst totais = totaisDeAvaliacao(documentos(msg.payload), usuarioId);\nlet lista = (msg.publicacoes || []).filter(publicacaoValida).map(function (p) {\n    return apresentar(p, totais[idDe(p._id)], usuarioId);\n});\n\nconst contem = function (valor, procurado) { return normalizar(valor).indexOf(normalizar(procurado)) >= 0; };\nconst tipo = parametro('tipo');\nconst ano = parametro('ano');\nconst area = parametro('area');\nconst subarea = parametro('subarea');\nconst curso = parametro('curso');\nconst disciplina = parametro('disciplina') || parametro('cadeira');\nconst titulo = parametro('titulo');\nconst autor = parametro('autor');\nconst termos = normalizar(parametro('q')).split(/\\s+/).filter(function (x) { return x.length >= 2; });\n\nif (tipo) lista = lista.filter(function (p) { return p.tipo === tipo; });\nif (ano) lista = lista.filter(function (p) { return String(p.ano) === ano; });\nif (area) lista = lista.filter(function (p) { return p.area === area; });\nif (subarea) lista = lista.filter(function (p) { return normalizar(p.subarea) === normalizar(subarea); });\nif (curso) lista = lista.filter(function (p) { return p.curso === curso; });\nif (disciplina) lista = lista.filter(function (p) { return contem(p.disciplina, disciplina); });\nif (titulo) lista = lista.filter(function (p) { return contem(p.titulo, titulo); });\nif (autor) lista = lista.filter(function (p) { return p.autores.some(function (n) { return contem(n, autor); }); });\nif (termos.length) {\n    lista = lista.filter(function (p) {\n        const alvo = normalizar([p.titulo, p.descricao, p.disciplina, p.subarea, p.curso, p.autores.join(' ')].join(' '));\n        return termos.every(function (x) { return alvo.indexOf(x) >= 0; });\n    });\n}\n\nif (parametro('ordem') === 'media') {\n    lista.sort(function (a, b) { return (b.media - a.media) || (b.totalAvaliacoes - a.totalAvaliacoes); });\n} else {\n    lista.sort(function (a, b) { return String(b.criadoEm).localeCompare(String(a.criadoEm)); });\n}\nconst limite = parseInt(parametro('limite'), 10);\nif (limite > 0) lista = lista.slice(0, limite);\n\nnode.status({ fill: 'green', shape: 'dot', text: lista.length + ' publicações' });\nreturn responder(200, lista);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1360,
+        "y": 170,
+        "wires": [
+            [
+                "b934f7aa96b7f62a"
+            ]
+        ]
+    },
+    {
+        "id": "237fa6e69389f590",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Post Publicação [POSTpublicacao]",
+        "url": "/POSTpublicacao",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 240,
+        "wires": [
+            [
+                "f1199f862f8798e8"
+            ]
+        ]
+    },
+    {
+        "id": "31de9b1e95bba6f8",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Post Publicação",
+        "statusCode": "",
+        "headers": {},
+        "x": 1600,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "f1199f862f8798e8",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Confere o usuário",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\n/** Corpo JSON da requisição (guardado em msg.corpo, porque msg.payload muda a cada nó). */\nfunction corpoDaRequisicao() {\n    const p = msg.payload;\n    return p && typeof p === 'object' && !Array.isArray(p) ? p : {};\n}\n\nfunction usuarioInformado() {\n    return idDe(cabecalho('x-hub-usuario'));\n}\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== publicar-usuario\n// POST /POSTpublicacao — 1) confere quem está publicando (cabeçalho X-Hub-Usuario).\nmsg.corpo = corpoDaRequisicao();\nmsg.usuarioId = usuarioInformado();\nif (!msg.usuarioId) return [null, semUsuario()];\nreturn [consultar({ _id: msg.usuarioId, colecao: 'usuario' }), null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 240,
+        "wires": [
+            [
+                "a01ca74947f059cb"
+            ],
+            [
+                "31de9b1e95bba6f8"
+            ]
+        ]
+    },
+    {
+        "id": "eda8a6d0d93057bb",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Valida e monta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst TIPOS = ['projeto', 'trabalho', 'prova', 'material'];\n\n// Subáreas de cada grande área (tabela do CNPq; a mesma lista do app em CatalogoAreas.swift).\n// Bloco gerado por ferramentas/catalogo/gerar_catalogo.py: não edite à mão.\nconst SUBAREAS = {\n    exatas: ['Astronomia', 'Ciência da Computação', 'Física', 'Geociências', 'Matemática', 'Oceanografia', 'Probabilidade e Estatística', 'Química'],\n    agrarias: ['Agronomia/Agrometeorologia', 'Agronomia/Ciência do Solo', 'Agronomia/Extensão Rural', 'Agronomia/Fitossanidade', 'Agronomia/Fitotecnia', 'Agronomia/Floricultura, Parques e Jardins', 'Ciência e Tecnologia de Alimentos/Ciência de Alimentos', 'Ciência e Tecnologia de Alimentos/Engenharia de Alimentos', 'Ciência e Tecnologia de Alimentos/Tecnologia de Alimentos', 'Engenharia Agrícola', 'Medicina Veterinária/Clínica e Cirurgia Animal', 'Medicina Veterinária/Inspeção de Produtos de Origem Animal', 'Medicina Veterinária/Medicina Veterinária Preventiva', 'Medicina Veterinária/Patologia Animal', 'Medicina Veterinária/Reprodução Animal', 'Recursos Florestais e Engenharia Florestal', 'Recursos Pesqueiros e Engenharia de Pesca', 'Zootecnia/Ecologia dos Animais Domésticos e Etologia', 'Zootecnia/Genética e Melhoramento dos Animais Domésticos', 'Zootecnia/Nutrição e Alimentação Animal', 'Zootecnia/Pastagem e Forragicultura', 'Zootecnia/Produção Animal'],\n    biologicas: ['Biofísica', 'Biologia Geral', 'Bioquímica', 'Botânica', 'Ecologia', 'Farmacologia', 'Fisiologia', 'Genética', 'Imunologia', 'Microbiologia', 'Morfologia', 'Parasitologia', 'Zoologia'],\n    saude: ['Educação Física', 'Enfermagem', 'Farmácia', 'Fisioterapia e Terapia Ocupacional', 'Fonoaudiologia', 'Medicina/Clínica Médica', 'Medicina/Cirurgia', 'Medicina/Saúde Materno-Infantil', 'Medicina/Psiquiatria', 'Medicina/Anatomia Patológica e Patologia Clínica', 'Medicina/Radiologia Médica', 'Medicina/Medicina Legal e Deontologia', 'Nutrição', 'Odontologia', 'Saúde Coletiva'],\n    humanas: ['Antropologia', 'Arqueologia', 'Ciência Política', 'Educação/Fundamentos da Educação', 'Educação/Administração Educacional', 'Educação/Planejamento e Avaliação Educacional', 'Educação/Ensino-Aprendizagem', 'Educação/Currículo', 'Educação/Orientação e Aconselhamento', 'Educação/Tópicos Especiais em Educação', 'Filosofia', 'Geografia', 'História', 'Psicologia', 'Sociologia'],\n    sociaisAplicadas: ['Administração', 'Arquitetura e Urbanismo', 'Arquivologia', 'Comunicação', 'Demografia', 'Desenho Industrial', 'Direito', 'Economia', 'Planejamento Urbano e Regional', 'Serviço Social', 'Turismo'],\n    engenharias: ['Engenharia Acústica', 'Engenharia Aeroespacial', 'Engenharia Biomédica', 'Engenharia Civil', 'Engenharia de Materiais e Metalúrgica', 'Engenharia de Minas', 'Engenharia de Produção', 'Engenharia de Transportes', 'Engenharia Elétrica', 'Engenharia Mecânica', 'Engenharia Naval e Oceânica', 'Engenharia Nuclear', 'Engenharia Química', 'Engenharia Sanitária'],\n    linguisticaLetrasArtes: ['Artes/Artes Plásticas', 'Artes/Dança', 'Artes/Música', 'Artes/Teatro', 'Letras', 'Linguística'],\n};\n\nconst AREAS = Object.keys(SUBAREAS);\n\nconst PLATAFORMAS = ['linkedin', 'instagram', 'blog', 'youtube', 'github', 'outro'];\n\nconst LIMITES = {\n    titulo: [5, 150], descricao: [20, 200], disciplina: [2, 150], instituicao: [2, 120],\n    curso: [0, 120], autor: [2, 80], nome: [2, 80], link: 500\n};\n\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction novoId() {\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n        const r = Math.random() * 16 | 0;\n        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16).toUpperCase();\n    });\n}\n\nfunction texto(valor) {\n    return typeof valor === 'string' ? valor.trim() : '';\n}\n\nfunction normalizar(valor) {\n    return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\n}\n\n/** Conta caracteres como o Swift conta (um emoji composto vale 1). */\nfunction caracteres(valor) {\n    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {\n        let total = 0;\n        const partes = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' }).segment(valor);\n        for (const parte of partes) { if (parte) total++; }\n        return total;\n    }\n    return Array.from(valor).length;\n}\n\nfunction tamanhoOk(valor, campo) {\n    const n = caracteres(valor);\n    return n >= LIMITES[campo][0] && n <= LIMITES[campo][1];\n}\n\n/** Devolve o nome oficial da subárea (sem diferenciar acentos/maiúsculas) ou null se não for da área. */\nfunction subareaDe(area, nome) {\n    const chave = normalizar(nome);\n    const lista = SUBAREAS[area] || [];\n    return lista.find(function (s) { return normalizar(s) === chave; }) || null;\n}\n\n/** Devolve o link limpo, null quando vazio ou undefined quando inválido. */\nfunction linkValido(valor) {\n    const t = texto(valor);\n    if (!t) return null;\n    if (t.length > LIMITES.link) return undefined;\n    if (/^https?:\\/\\/[^\\s/?#]+\\.[^\\s]+$/i.test(t) || /^asset:\\/\\/[\\w-]+$/.test(t)) return t;\n    return undefined;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction validarPublicacao(corpo) {\n    const erros = [];\n    const titulo = texto(corpo.titulo);\n    const descricao = texto(corpo.descricao);\n    const disciplina = texto(corpo.disciplina);\n    const subareaInformada = texto(corpo.subarea);\n    const subarea = subareaInformada ? subareaDe(corpo.area, subareaInformada) : null;\n    const instituicao = texto(corpo.instituicao) || 'CTISM – UFSM';\n    const curso = texto(corpo.curso);\n    const ano = Number(corpo.ano);\n    const anoAtual = new Date().getFullYear();\n    const imagemLink = linkValido(corpo.imagemLink);\n    const link = linkValido(corpo.link);\n    const lista = Array.isArray(corpo.autores) ? corpo.autores : [corpo.autores];\n    const autores = lista.map(texto).filter(Boolean);\n\n    if (TIPOS.indexOf(corpo.tipo) < 0) erros.push('tipo: use ' + TIPOS.join(', '));\n    if (!tamanhoOk(titulo, 'titulo')) erros.push('titulo: de 5 a 150 caracteres');\n    if (!tamanhoOk(descricao, 'descricao')) erros.push('descricao: de 20 a 200 caracteres');\n    if (AREAS.indexOf(corpo.area) < 0) erros.push('area: use ' + AREAS.join(', '));\n    else if (subareaInformada && !subarea) erros.push('subarea: não pertence à área ' + corpo.area + ' (veja GET /GETsubareas)');\n    if (!tamanhoOk(disciplina, 'disciplina')) erros.push('disciplina: de 2 a 150 caracteres');\n    if (!tamanhoOk(instituicao, 'instituicao')) erros.push('instituicao: de 2 a 120 caracteres');\n    if (!tamanhoOk(curso, 'curso')) erros.push('curso: até 120 caracteres');\n    if (!(Number.isInteger(ano) && ano >= 1990 && ano <= anoAtual + 1)) erros.push('ano: entre 1990 e ' + (anoAtual + 1));\n    if (imagemLink === undefined) erros.push('imagemLink: link inválido (use http:// ou https://)');\n    if (link === undefined) erros.push('link: link inválido (use http:// ou https://)');\n    if (!autores.length || autores.length > 10 || !autores.every(function (a) { return tamanhoOk(a, 'autor'); })) {\n        erros.push('autores: de 1 a 10 nomes, cada um com 2 a 80 caracteres');\n    }\n\n    return {\n        erros: erros,\n        dados: {\n            tipo: corpo.tipo, titulo: titulo, descricao: descricao, area: corpo.area, subarea: subarea, disciplina: disciplina,\n            instituicao: instituicao, curso: curso, ano: ano, imagemLink: imagemLink || null,\n            link: link || null, autores: autores,\n            plataforma: PLATAFORMAS.indexOf(corpo.plataforma) >= 0 ? corpo.plataforma : 'outro'\n        }\n    };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== publicar-validar\n// 2) valida os campos e monta o documento da publicação.\nif (!documentos(msg.payload)[0]) return [null, semUsuario()];\nconst v = validarPublicacao(msg.corpo || {});\nif (v.erros.length) return [null, invalido(v.erros)];\nconst doc = Object.assign({ _id: novoId(), colecao: 'publicacao' }, v.dados, { usuarioId: msg.usuarioId, criadoEm: agora() });\nmsg.documento = doc;\nmsg.payload = doc;\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 240,
+        "wires": [
+            [
+                "5ba341f9b62049bd"
+            ],
+            [
+                "31de9b1e95bba6f8"
+            ]
+        ]
+    },
+    {
+        "id": "5ba341f9b62049bd",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Grava a publicação",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "insert",
+        "x": 1130,
+        "y": 240,
+        "wires": [
+            [
+                "59cd786af1076211"
+            ]
+        ]
+    },
+    {
+        "id": "59cd786af1076211",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst PLATAFORMAS = ['linkedin', 'instagram', 'blog', 'youtube', 'github', 'outro'];\n\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\n/** Formato público de uma publicação (sem o id de quem publicou). */\nfunction apresentar(p, totais, usuarioId) {\n    const base = p.avaliacoesBase || {};\n    const t = totais || { soma: 0, total: 0, minhaNota: null };\n    const soma = (Number(base.soma) || 0) + t.soma;\n    const total = (Number(base.total) || 0) + t.total;\n    return {\n        id: idDe(p._id),\n        tipo: p.tipo,\n        titulo: p.titulo,\n        descricao: p.descricao,\n        imagemLink: p.imagemLink || null,\n        link: p.link || null,\n        plataforma: PLATAFORMAS.indexOf(p.plataforma) >= 0 ? p.plataforma : 'outro',\n        area: p.area,\n        subarea: p.subarea || null,\n        disciplina: p.disciplina || p.cadeira || '',\n        curso: p.curso || '',\n        instituicao: p.instituicao || '',\n        ano: Number(p.ano),\n        autores: Array.isArray(p.autores) ? p.autores.map(String) : [],\n        media: total ? Math.round((soma / total) * 100) / 100 : 0,\n        totalAvaliacoes: total,\n        minhaNota: t.minhaNota,\n        meu: !!usuarioId && idDe(p.usuarioId) === usuarioId,\n        criadoEm: p.criadoEm || agora()\n    };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== publicar-resposta\n// 3) gravou no Cloudant (se der erro, quem responde é o nó catch).\nnode.status({ fill: 'green', shape: 'dot', text: 'publicada: ' + msg.documento.titulo.slice(0, 30) });\nreturn responder(201, apresentar(msg.documento, null, msg.usuarioId));\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1360,
+        "y": 240,
+        "wires": [
+            [
+                "31de9b1e95bba6f8"
+            ]
+        ]
+    },
+    {
+        "id": "cb61b0885eb479a0",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Update Publicação [UPDATEpublicacao]",
+        "url": "/UPDATEpublicacao",
+        "method": "put",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 310,
+        "wires": [
+            [
+                "76f35ca1f368f66a"
+            ]
+        ]
+    },
+    {
+        "id": "6c1e08ed40c5fc5b",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Update Publicação",
+        "statusCode": "",
+        "headers": {},
+        "x": 2080,
+        "y": 310,
+        "wires": []
+    },
+    {
+        "id": "76f35ca1f368f66a",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Confere o pedido",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\nfunction parametro(nome) {\n    const valor = ((msg.req && msg.req.query) || {})[nome];\n    if (Array.isArray(valor)) return String(valor[0] || '').trim();\n    return valor === undefined || valor === null ? '' : String(valor).trim();\n}\n\n/** Corpo JSON da requisição (guardado em msg.corpo, porque msg.payload muda a cada nó). */\nfunction corpoDaRequisicao() {\n    const p = msg.payload;\n    return p && typeof p === 'object' && !Array.isArray(p) ? p : {};\n}\n\nfunction usuarioInformado() {\n    return idDe(cabecalho('x-hub-usuario'));\n}\n\nfunction ehModeracao() {\n    const chave = env.get('HUB_MODERACAO_TOKEN');\n    return !!chave && cabecalho('x-hub-moderacao') === String(chave);\n}\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== atualizar-consulta\n// PUT /UPDATEpublicacao?id=… — 1) só quem publicou (ou a moderação) altera. O corpo traz os campos novos.\nmsg.corpo = corpoDaRequisicao();\nmsg.usuarioId = usuarioInformado();\nmsg.publicacaoId = idDe(parametro('id') || msg.corpo.id);\nif (!msg.publicacaoId) return [null, invalido(['id: informe o id da publicação (?id=…)'])];\nif (!msg.usuarioId && !ehModeracao()) return [null, semUsuario()];\nreturn [consultar({ _id: msg.publicacaoId, colecao: 'publicacao' }), null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 310,
+        "wires": [
+            [
+                "7f0e85f9cf4672c4"
+            ],
+            [
+                "6c1e08ed40c5fc5b"
+            ]
+        ]
+    },
+    {
+        "id": "7f0e85f9cf4672c4",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca a publicação",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 310,
+        "wires": [
+            [
+                "f25c5fc50d3061bb"
+            ]
+        ]
+    },
+    {
+        "id": "f25c5fc50d3061bb",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Valida e junta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst TIPOS = ['projeto', 'trabalho', 'prova', 'material'];\n\n// Subáreas de cada grande área (tabela do CNPq; a mesma lista do app em CatalogoAreas.swift).\n// Bloco gerado por ferramentas/catalogo/gerar_catalogo.py: não edite à mão.\nconst SUBAREAS = {\n    exatas: ['Astronomia', 'Ciência da Computação', 'Física', 'Geociências', 'Matemática', 'Oceanografia', 'Probabilidade e Estatística', 'Química'],\n    agrarias: ['Agronomia/Agrometeorologia', 'Agronomia/Ciência do Solo', 'Agronomia/Extensão Rural', 'Agronomia/Fitossanidade', 'Agronomia/Fitotecnia', 'Agronomia/Floricultura, Parques e Jardins', 'Ciência e Tecnologia de Alimentos/Ciência de Alimentos', 'Ciência e Tecnologia de Alimentos/Engenharia de Alimentos', 'Ciência e Tecnologia de Alimentos/Tecnologia de Alimentos', 'Engenharia Agrícola', 'Medicina Veterinária/Clínica e Cirurgia Animal', 'Medicina Veterinária/Inspeção de Produtos de Origem Animal', 'Medicina Veterinária/Medicina Veterinária Preventiva', 'Medicina Veterinária/Patologia Animal', 'Medicina Veterinária/Reprodução Animal', 'Recursos Florestais e Engenharia Florestal', 'Recursos Pesqueiros e Engenharia de Pesca', 'Zootecnia/Ecologia dos Animais Domésticos e Etologia', 'Zootecnia/Genética e Melhoramento dos Animais Domésticos', 'Zootecnia/Nutrição e Alimentação Animal', 'Zootecnia/Pastagem e Forragicultura', 'Zootecnia/Produção Animal'],\n    biologicas: ['Biofísica', 'Biologia Geral', 'Bioquímica', 'Botânica', 'Ecologia', 'Farmacologia', 'Fisiologia', 'Genética', 'Imunologia', 'Microbiologia', 'Morfologia', 'Parasitologia', 'Zoologia'],\n    saude: ['Educação Física', 'Enfermagem', 'Farmácia', 'Fisioterapia e Terapia Ocupacional', 'Fonoaudiologia', 'Medicina/Clínica Médica', 'Medicina/Cirurgia', 'Medicina/Saúde Materno-Infantil', 'Medicina/Psiquiatria', 'Medicina/Anatomia Patológica e Patologia Clínica', 'Medicina/Radiologia Médica', 'Medicina/Medicina Legal e Deontologia', 'Nutrição', 'Odontologia', 'Saúde Coletiva'],\n    humanas: ['Antropologia', 'Arqueologia', 'Ciência Política', 'Educação/Fundamentos da Educação', 'Educação/Administração Educacional', 'Educação/Planejamento e Avaliação Educacional', 'Educação/Ensino-Aprendizagem', 'Educação/Currículo', 'Educação/Orientação e Aconselhamento', 'Educação/Tópicos Especiais em Educação', 'Filosofia', 'Geografia', 'História', 'Psicologia', 'Sociologia'],\n    sociaisAplicadas: ['Administração', 'Arquitetura e Urbanismo', 'Arquivologia', 'Comunicação', 'Demografia', 'Desenho Industrial', 'Direito', 'Economia', 'Planejamento Urbano e Regional', 'Serviço Social', 'Turismo'],\n    engenharias: ['Engenharia Acústica', 'Engenharia Aeroespacial', 'Engenharia Biomédica', 'Engenharia Civil', 'Engenharia de Materiais e Metalúrgica', 'Engenharia de Minas', 'Engenharia de Produção', 'Engenharia de Transportes', 'Engenharia Elétrica', 'Engenharia Mecânica', 'Engenharia Naval e Oceânica', 'Engenharia Nuclear', 'Engenharia Química', 'Engenharia Sanitária'],\n    linguisticaLetrasArtes: ['Artes/Artes Plásticas', 'Artes/Dança', 'Artes/Música', 'Artes/Teatro', 'Letras', 'Linguística'],\n};\n\nconst AREAS = Object.keys(SUBAREAS);\n\nconst PLATAFORMAS = ['linkedin', 'instagram', 'blog', 'youtube', 'github', 'outro'];\n\nconst LIMITES = {\n    titulo: [5, 150], descricao: [20, 200], disciplina: [2, 150], instituicao: [2, 120],\n    curso: [0, 120], autor: [2, 80], nome: [2, 80], link: 500\n};\n\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction texto(valor) {\n    return typeof valor === 'string' ? valor.trim() : '';\n}\n\nfunction normalizar(valor) {\n    return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\n}\n\n/** Conta caracteres como o Swift conta (um emoji composto vale 1). */\nfunction caracteres(valor) {\n    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {\n        let total = 0;\n        const partes = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' }).segment(valor);\n        for (const parte of partes) { if (parte) total++; }\n        return total;\n    }\n    return Array.from(valor).length;\n}\n\nfunction tamanhoOk(valor, campo) {\n    const n = caracteres(valor);\n    return n >= LIMITES[campo][0] && n <= LIMITES[campo][1];\n}\n\n/** Devolve o nome oficial da subárea (sem diferenciar acentos/maiúsculas) ou null se não for da área. */\nfunction subareaDe(area, nome) {\n    const chave = normalizar(nome);\n    const lista = SUBAREAS[area] || [];\n    return lista.find(function (s) { return normalizar(s) === chave; }) || null;\n}\n\n/** Devolve o link limpo, null quando vazio ou undefined quando inválido. */\nfunction linkValido(valor) {\n    const t = texto(valor);\n    if (!t) return null;\n    if (t.length > LIMITES.link) return undefined;\n    if (/^https?:\\/\\/[^\\s/?#]+\\.[^\\s]+$/i.test(t) || /^asset:\\/\\/[\\w-]+$/.test(t)) return t;\n    return undefined;\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\nfunction ehModeracao() {\n    const chave = env.get('HUB_MODERACAO_TOKEN');\n    return !!chave && cabecalho('x-hub-moderacao') === String(chave);\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction validarPublicacao(corpo) {\n    const erros = [];\n    const titulo = texto(corpo.titulo);\n    const descricao = texto(corpo.descricao);\n    const disciplina = texto(corpo.disciplina);\n    const subareaInformada = texto(corpo.subarea);\n    const subarea = subareaInformada ? subareaDe(corpo.area, subareaInformada) : null;\n    const instituicao = texto(corpo.instituicao) || 'CTISM – UFSM';\n    const curso = texto(corpo.curso);\n    const ano = Number(corpo.ano);\n    const anoAtual = new Date().getFullYear();\n    const imagemLink = linkValido(corpo.imagemLink);\n    const link = linkValido(corpo.link);\n    const lista = Array.isArray(corpo.autores) ? corpo.autores : [corpo.autores];\n    const autores = lista.map(texto).filter(Boolean);\n\n    if (TIPOS.indexOf(corpo.tipo) < 0) erros.push('tipo: use ' + TIPOS.join(', '));\n    if (!tamanhoOk(titulo, 'titulo')) erros.push('titulo: de 5 a 150 caracteres');\n    if (!tamanhoOk(descricao, 'descricao')) erros.push('descricao: de 20 a 200 caracteres');\n    if (AREAS.indexOf(corpo.area) < 0) erros.push('area: use ' + AREAS.join(', '));\n    else if (subareaInformada && !subarea) erros.push('subarea: não pertence à área ' + corpo.area + ' (veja GET /GETsubareas)');\n    if (!tamanhoOk(disciplina, 'disciplina')) erros.push('disciplina: de 2 a 150 caracteres');\n    if (!tamanhoOk(instituicao, 'instituicao')) erros.push('instituicao: de 2 a 120 caracteres');\n    if (!tamanhoOk(curso, 'curso')) erros.push('curso: até 120 caracteres');\n    if (!(Number.isInteger(ano) && ano >= 1990 && ano <= anoAtual + 1)) erros.push('ano: entre 1990 e ' + (anoAtual + 1));\n    if (imagemLink === undefined) erros.push('imagemLink: link inválido (use http:// ou https://)');\n    if (link === undefined) erros.push('link: link inválido (use http:// ou https://)');\n    if (!autores.length || autores.length > 10 || !autores.every(function (a) { return tamanhoOk(a, 'autor'); })) {\n        erros.push('autores: de 1 a 10 nomes, cada um com 2 a 80 caracteres');\n    }\n\n    return {\n        erros: erros,\n        dados: {\n            tipo: corpo.tipo, titulo: titulo, descricao: descricao, area: corpo.area, subarea: subarea, disciplina: disciplina,\n            instituicao: instituicao, curso: curso, ano: ano, imagemLink: imagemLink || null,\n            link: link || null, autores: autores,\n            plataforma: PLATAFORMAS.indexOf(corpo.plataforma) >= 0 ? corpo.plataforma : 'outro'\n        }\n    };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\nfunction naoEncontrado(oque) {\n    return responder(404, { erro: oque + ' não encontrada', detalhes: [] });\n}\n\nfunction proibido(motivo) {\n    return responder(403, { erro: motivo, detalhes: [] });\n}\n\n// ===================================================================== atualizar-validar\n// 2) junta o que mudou com o que já estava gravado e valida tudo de novo.\nconst atual = documentos(msg.payload)[0];\nif (!atual) return [null, naoEncontrado('Publicação')];\nif (!ehModeracao() && idDe(atual.usuarioId) !== msg.usuarioId) {\n    return [null, proibido('Só quem publicou pode alterar esta publicação.')];\n}\nconst campos = ['tipo', 'titulo', 'descricao', 'area', 'subarea', 'disciplina', 'instituicao', 'curso', 'ano',\n    'imagemLink', 'link', 'autores', 'plataforma'];\nconst proposta = {};\ncampos.forEach(function (c) { proposta[c] = Object.prototype.hasOwnProperty.call(msg.corpo, c) ? msg.corpo[c] : atual[c]; });\nconst v = validarPublicacao(proposta);\nif (v.erros.length) return [null, invalido(v.erros)];\nconst doc = Object.assign({}, atual, v.dados, { atualizadoEm: agora() });\nmsg.documento = doc;\nmsg.payload = doc;\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 310,
+        "wires": [
+            [
+                "365db578f7d509de"
+            ],
+            [
+                "6c1e08ed40c5fc5b"
+            ]
+        ]
+    },
+    {
+        "id": "365db578f7d509de",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Grava a publicação",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "insert",
+        "x": 1120,
+        "y": 310,
+        "wires": [
+            [
+                "8d27aab6b04050b7"
+            ]
+        ]
+    },
+    {
+        "id": "8d27aab6b04050b7",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta avaliações",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== atualizar-avaliacoes\n// 3) gravou; busca as avaliações para devolver a média atualizada.\nreturn consultar({ colecao: 'avaliacao', publicacaoId: msg.publicacaoId }, ['publicacaoId', 'usuarioId', 'nota']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1360,
+        "y": 310,
+        "wires": [
+            [
+                "040941bf63e9b9a1"
+            ]
+        ]
+    },
+    {
+        "id": "040941bf63e9b9a1",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca avaliações",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 1600,
+        "y": 310,
+        "wires": [
+            [
+                "343a09e8cc4ee58a"
+            ]
+        ]
+    },
+    {
+        "id": "343a09e8cc4ee58a",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst PLATAFORMAS = ['linkedin', 'instagram', 'blog', 'youtube', 'github', 'outro'];\n\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n/** Soma, total e a nota do usuário informado, por publicação. */\nfunction totaisDeAvaliacao(avaliacoes, usuarioId) {\n    const t = {};\n    avaliacoes.forEach(function (a) {\n        const nota = Number(a.nota);\n        if (!(nota >= 1 && nota <= 5)) return;\n        const chave = idDe(a.publicacaoId);\n        const x = t[chave] || (t[chave] = { soma: 0, total: 0, minhaNota: null });\n        x.soma += nota;\n        x.total += 1;\n        if (usuarioId && idDe(a.usuarioId) === usuarioId) x.minhaNota = nota;\n    });\n    return t;\n}\n\n/** Formato público de uma publicação (sem o id de quem publicou). */\nfunction apresentar(p, totais, usuarioId) {\n    const base = p.avaliacoesBase || {};\n    const t = totais || { soma: 0, total: 0, minhaNota: null };\n    const soma = (Number(base.soma) || 0) + t.soma;\n    const total = (Number(base.total) || 0) + t.total;\n    return {\n        id: idDe(p._id),\n        tipo: p.tipo,\n        titulo: p.titulo,\n        descricao: p.descricao,\n        imagemLink: p.imagemLink || null,\n        link: p.link || null,\n        plataforma: PLATAFORMAS.indexOf(p.plataforma) >= 0 ? p.plataforma : 'outro',\n        area: p.area,\n        subarea: p.subarea || null,\n        disciplina: p.disciplina || p.cadeira || '',\n        curso: p.curso || '',\n        instituicao: p.instituicao || '',\n        ano: Number(p.ano),\n        autores: Array.isArray(p.autores) ? p.autores.map(String) : [],\n        media: total ? Math.round((soma / total) * 100) / 100 : 0,\n        totalAvaliacoes: total,\n        minhaNota: t.minhaNota,\n        meu: !!usuarioId && idDe(p.usuarioId) === usuarioId,\n        criadoEm: p.criadoEm || agora()\n    };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== atualizar-resposta\nconst totais = totaisDeAvaliacao(documentos(msg.payload), msg.usuarioId);\nreturn responder(200, apresentar(msg.documento, totais[msg.publicacaoId], msg.usuarioId));\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1840,
+        "y": 310,
+        "wires": [
+            [
+                "6c1e08ed40c5fc5b"
+            ]
+        ]
+    },
+    {
+        "id": "05c32098f7476048",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Delete Publicação [DELETEpublicacao]",
+        "url": "/DELETEpublicacao",
+        "method": "delete",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 380,
+        "wires": [
+            [
+                "dddb719cda4c6795"
+            ]
+        ]
+    },
+    {
+        "id": "689e7eb0dcb03977",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Delete Publicação",
+        "statusCode": "",
+        "headers": {},
+        "x": 1600,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "dddb719cda4c6795",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Confere o pedido",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\nfunction parametro(nome) {\n    const valor = ((msg.req && msg.req.query) || {})[nome];\n    if (Array.isArray(valor)) return String(valor[0] || '').trim();\n    return valor === undefined || valor === null ? '' : String(valor).trim();\n}\n\n/** Corpo JSON da requisição (guardado em msg.corpo, porque msg.payload muda a cada nó). */\nfunction corpoDaRequisicao() {\n    const p = msg.payload;\n    return p && typeof p === 'object' && !Array.isArray(p) ? p : {};\n}\n\nfunction usuarioInformado() {\n    return idDe(cabecalho('x-hub-usuario'));\n}\n\nfunction ehModeracao() {\n    const chave = env.get('HUB_MODERACAO_TOKEN');\n    return !!chave && cabecalho('x-hub-moderacao') === String(chave);\n}\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== remover-consulta\n// DELETE /DELETEpublicacao?id=… — 1) só quem publicou ou a moderação (cabeçalho X-Hub-Moderacao).\nmsg.usuarioId = usuarioInformado();\nmsg.publicacaoId = idDe(parametro('id') || corpoDaRequisicao().id);\nif (!msg.publicacaoId) return [null, invalido(['id: informe o id da publicação (?id=…)'])];\nif (!msg.usuarioId && !ehModeracao()) return [null, semUsuario()];\nreturn [consultar({ _id: msg.publicacaoId, colecao: 'publicacao' }, ['_id', '_rev', 'usuarioId']), null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 380,
+        "wires": [
+            [
+                "2c79e9572b2dcc02"
+            ],
+            [
+                "689e7eb0dcb03977"
+            ]
+        ]
+    },
+    {
+        "id": "2c79e9572b2dcc02",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca a publicação",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 380,
+        "wires": [
+            [
+                "0987c34cee913753"
+            ]
+        ]
+    },
+    {
+        "id": "0987c34cee913753",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Confere quem remove",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\nfunction ehModeracao() {\n    const chave = env.get('HUB_MODERACAO_TOKEN');\n    return !!chave && cabecalho('x-hub-moderacao') === String(chave);\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction naoEncontrado(oque) {\n    return responder(404, { erro: oque + ' não encontrada', detalhes: [] });\n}\n\nfunction proibido(motivo) {\n    return responder(403, { erro: motivo, detalhes: [] });\n}\n\n// ===================================================================== remover-validar\n// 2) para apagar, o Cloudant precisa do _id e da _rev atual do documento.\nconst atual = documentos(msg.payload)[0];\nif (!atual) return [null, naoEncontrado('Publicação')];\nif (!ehModeracao() && idDe(atual.usuarioId) !== msg.usuarioId) {\n    return [null, proibido('Só quem publicou (ou a moderação) pode remover esta publicação.')];\n}\nmsg.payload = { _id: atual._id, _rev: atual._rev };\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 380,
+        "wires": [
+            [
+                "0251fd6f543c69c5"
+            ],
+            [
+                "689e7eb0dcb03977"
+            ]
+        ]
+    },
+    {
+        "id": "0251fd6f543c69c5",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Apaga a publicação",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "delete",
+        "x": 1120,
+        "y": 380,
+        "wires": [
+            [
+                "6f7e4f34e9f1f96d"
+            ]
+        ]
+    },
+    {
+        "id": "6f7e4f34e9f1f96d",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== remover-resposta\n// 3) removida. As avaliações dela deixam de contar (a lista só considera publicações existentes).\nreturn responder(200, { ok: true, id: msg.publicacaoId });\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1360,
+        "y": 380,
+        "wires": [
+            [
+                "689e7eb0dcb03977"
+            ]
+        ]
+    },
+    {
+        "id": "b68e40ec1acb1663",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Post Avaliação [POSTavaliacao]",
+        "url": "/POSTavaliacao",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 450,
+        "wires": [
+            [
+                "bb83c3c46e937d22"
+            ]
+        ]
+    },
+    {
+        "id": "bcd337dca0ecc944",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Post Avaliação",
+        "statusCode": "",
+        "headers": {},
+        "x": 2080,
+        "y": 450,
+        "wires": []
+    },
+    {
+        "id": "bb83c3c46e937d22",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Confere o pedido",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\n/** Corpo JSON da requisição (guardado em msg.corpo, porque msg.payload muda a cada nó). */\nfunction corpoDaRequisicao() {\n    const p = msg.payload;\n    return p && typeof p === 'object' && !Array.isArray(p) ? p : {};\n}\n\nfunction usuarioInformado() {\n    return idDe(cabecalho('x-hub-usuario'));\n}\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction idAvaliacao(publicacaoId, usuarioId) {\n    return 'avaliacao:' + publicacaoId + ':' + usuarioId;\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== avaliar-consulta\n// POST /POSTavaliacao — corpo { publicacaoId, nota }. Uma avaliação por pessoa; avaliar de novo troca a nota.\n// 1) busca, numa consulta só, o usuário, a publicação e a avaliação anterior (se houver).\nmsg.corpo = corpoDaRequisicao();\nmsg.usuarioId = usuarioInformado();\nif (!msg.usuarioId) return [null, semUsuario()];\nmsg.publicacaoId = idDe(msg.corpo.publicacaoId);\nmsg.nota = Number(msg.corpo.nota);\nconst erros = [];\nif (!msg.publicacaoId) erros.push('publicacaoId: informe o id da publicação');\nif (!(Number.isInteger(msg.nota) && msg.nota >= 1 && msg.nota <= 5)) erros.push('nota: número inteiro de 1 a 5');\nif (erros.length) return [null, invalido(erros)];\nmsg.idAvaliacao = idAvaliacao(msg.publicacaoId, msg.usuarioId);\nreturn [consultar({ $or: [{ _id: msg.usuarioId }, { _id: msg.publicacaoId }, { _id: msg.idAvaliacao }] }), null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 450,
+        "wires": [
+            [
+                "651f774df994cf4a"
+            ],
+            [
+                "bcd337dca0ecc944"
+            ]
+        ]
+    },
+    {
+        "id": "651f774df994cf4a",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca usuário e publicação",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 450,
+        "wires": [
+            [
+                "a008b75f95dc5a17"
+            ]
+        ]
+    },
+    {
+        "id": "a008b75f95dc5a17",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a avaliação",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction idAvaliacao(publicacaoId, usuarioId) {\n    return 'avaliacao:' + publicacaoId + ':' + usuarioId;\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\nfunction naoEncontrado(oque) {\n    return responder(404, { erro: oque + ' não encontrada', detalhes: [] });\n}\n\n// ===================================================================== avaliar-gravar\n// 2) monta a avaliação (com a _rev da anterior, para o Cloudant atualizar em vez de recusar).\nconst achados = documentos(msg.payload);\nconst usuario = achados.find(function (d) { return d.colecao === 'usuario' && idDe(d._id) === msg.usuarioId; });\nconst publicacao = achados.find(function (d) { return d.colecao === 'publicacao' && idDe(d._id) === msg.publicacaoId; });\nconst anterior = achados.find(function (d) { return d._id === msg.idAvaliacao; });\nif (!usuario) return [null, semUsuario()];\nif (!publicacao) return [null, naoEncontrado('Publicação')];\nconst doc = {\n    _id: msg.idAvaliacao, colecao: 'avaliacao', publicacaoId: msg.publicacaoId, usuarioId: msg.usuarioId,\n    nota: msg.nota, criadoEm: (anterior && anterior.criadoEm) || agora(), atualizadoEm: agora()\n};\nif (anterior && anterior._rev) doc._rev = anterior._rev;\nmsg.publicacao = publicacao;\nmsg.avaliacao = doc;\nmsg.payload = doc;\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 450,
+        "wires": [
+            [
+                "3835a9db86976c96"
+            ],
+            [
+                "bcd337dca0ecc944"
+            ]
+        ]
+    },
+    {
+        "id": "3835a9db86976c96",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Grava a avaliação",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "insert",
+        "x": 1120,
+        "y": 450,
+        "wires": [
+            [
+                "1f1bf63ddc11b4b8"
+            ]
+        ]
+    },
+    {
+        "id": "1f1bf63ddc11b4b8",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta avaliações",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== avaliar-recalcular\n// 3) gravou; busca as avaliações da publicação para devolver a média nova.\nreturn consultar({ colecao: 'avaliacao', publicacaoId: msg.publicacaoId }, ['_id', 'publicacaoId', 'usuarioId', 'nota']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1360,
+        "y": 450,
+        "wires": [
+            [
+                "b7c177f14f67f39e"
+            ]
+        ]
+    },
+    {
+        "id": "b7c177f14f67f39e",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca avaliações",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 1600,
+        "y": 450,
+        "wires": [
+            [
+                "9e11fda7632dbe68"
+            ]
+        ]
+    },
+    {
+        "id": "9e11fda7632dbe68",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Calcula a média",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst PLATAFORMAS = ['linkedin', 'instagram', 'blog', 'youtube', 'github', 'outro'];\n\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n/** Soma, total e a nota do usuário informado, por publicação. */\nfunction totaisDeAvaliacao(avaliacoes, usuarioId) {\n    const t = {};\n    avaliacoes.forEach(function (a) {\n        const nota = Number(a.nota);\n        if (!(nota >= 1 && nota <= 5)) return;\n        const chave = idDe(a.publicacaoId);\n        const x = t[chave] || (t[chave] = { soma: 0, total: 0, minhaNota: null });\n        x.soma += nota;\n        x.total += 1;\n        if (usuarioId && idDe(a.usuarioId) === usuarioId) x.minhaNota = nota;\n    });\n    return t;\n}\n\n/** Formato público de uma publicação (sem o id de quem publicou). */\nfunction apresentar(p, totais, usuarioId) {\n    const base = p.avaliacoesBase || {};\n    const t = totais || { soma: 0, total: 0, minhaNota: null };\n    const soma = (Number(base.soma) || 0) + t.soma;\n    const total = (Number(base.total) || 0) + t.total;\n    return {\n        id: idDe(p._id),\n        tipo: p.tipo,\n        titulo: p.titulo,\n        descricao: p.descricao,\n        imagemLink: p.imagemLink || null,\n        link: p.link || null,\n        plataforma: PLATAFORMAS.indexOf(p.plataforma) >= 0 ? p.plataforma : 'outro',\n        area: p.area,\n        subarea: p.subarea || null,\n        disciplina: p.disciplina || p.cadeira || '',\n        curso: p.curso || '',\n        instituicao: p.instituicao || '',\n        ano: Number(p.ano),\n        autores: Array.isArray(p.autores) ? p.autores.map(String) : [],\n        media: total ? Math.round((soma / total) * 100) / 100 : 0,\n        totalAvaliacoes: total,\n        minhaNota: t.minhaNota,\n        meu: !!usuarioId && idDe(p.usuarioId) === usuarioId,\n        criadoEm: p.criadoEm || agora()\n    };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== avaliar-resposta\n// 4) a avaliação recém-gravada entra na conta mesmo que a consulta ainda não a enxergue.\nconst lista = documentos(msg.payload).filter(function (a) { return a._id !== msg.avaliacao._id; });\nlista.push(msg.avaliacao);\nconst t = totaisDeAvaliacao(lista, msg.usuarioId)[msg.publicacaoId];\nconst p = apresentar(msg.publicacao, t, msg.usuarioId);\nreturn responder(200, { publicacaoId: msg.publicacaoId, media: p.media, totalAvaliacoes: p.totalAvaliacoes, minhaNota: msg.nota });\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1840,
+        "y": 450,
+        "wires": [
+            [
+                "bcd337dca0ecc944"
+            ]
+        ]
+    },
+    {
+        "id": "443f661c01362707",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Post Usuário [POSTusuario]",
+        "url": "/POSTusuario",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 520,
+        "wires": [
+            [
+                "85c1a4d665d7338a"
+            ]
+        ]
+    },
+    {
+        "id": "ffd280cfadb376ea",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Post Usuário",
+        "statusCode": "",
+        "headers": {},
+        "x": 1120,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "85c1a4d665d7338a",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Valida e monta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst LIMITES = {\n    titulo: [5, 150], descricao: [20, 200], disciplina: [2, 150], instituicao: [2, 120],\n    curso: [0, 120], autor: [2, 80], nome: [2, 80], link: 500\n};\n\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction novoId() {\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n        const r = Math.random() * 16 | 0;\n        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16).toUpperCase();\n    });\n}\n\nfunction texto(valor) {\n    return typeof valor === 'string' ? valor.trim() : '';\n}\n\n/** Conta caracteres como o Swift conta (um emoji composto vale 1). */\nfunction caracteres(valor) {\n    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {\n        let total = 0;\n        const partes = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' }).segment(valor);\n        for (const parte of partes) { if (parte) total++; }\n        return total;\n    }\n    return Array.from(valor).length;\n}\n\nfunction tamanhoOk(valor, campo) {\n    const n = caracteres(valor);\n    return n >= LIMITES[campo][0] && n <= LIMITES[campo][1];\n}\n\n/** Corpo JSON da requisição (guardado em msg.corpo, porque msg.payload muda a cada nó). */\nfunction corpoDaRequisicao() {\n    const p = msg.payload;\n    return p && typeof p === 'object' && !Array.isArray(p) ? p : {};\n}\n\nfunction validarUsuario(corpo) {\n    const nome = texto(corpo.nome);\n    const curso = texto(corpo.curso);\n    const erros = [];\n    if (!tamanhoOk(nome, 'nome')) erros.push('nome: de 2 a 80 caracteres');\n    if (!tamanhoOk(curso, 'curso')) erros.push('curso: até 120 caracteres');\n    return { erros: erros, nome: nome, curso: curso };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\n// ===================================================================== usuario-cadastrar\n// POST /POSTusuario — corpo { nome, curso }. Devolve o id que o app manda no cabeçalho X-Hub-Usuario.\nconst v = validarUsuario(corpoDaRequisicao());\nif (v.erros.length) return [null, invalido(v.erros)];\nconst doc = { _id: novoId(), colecao: 'usuario', nome: v.nome, curso: v.curso, criadoEm: agora() };\nmsg.documento = doc;\nmsg.payload = doc;\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 520,
+        "wires": [
+            [
+                "54e7a06bc22e48d2"
+            ],
+            [
+                "ffd280cfadb376ea"
+            ]
+        ]
+    },
+    {
+        "id": "54e7a06bc22e48d2",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Grava o usuário",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "insert",
+        "x": 640,
+        "y": 520,
+        "wires": [
+            [
+                "10f20617e77b2efc"
+            ]
+        ]
+    },
+    {
+        "id": "10f20617e77b2efc",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction usuarioPublico(u) {\n    return { id: idDe(u._id), nome: u.nome, curso: u.curso || '', criadoEm: u.criadoEm || agora() };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== usuario-cadastrar-resposta\nreturn responder(201, usuarioPublico(msg.documento));\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 520,
+        "wires": [
+            [
+                "ffd280cfadb376ea"
+            ]
+        ]
+    },
+    {
+        "id": "bd6900d6a9f82f18",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Get Usuário [GETusuario]",
+        "url": "/GETusuario",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 590,
+        "wires": [
+            [
+                "7a9860895c7d3bc8"
+            ]
+        ]
+    },
+    {
+        "id": "f9b69a40cd473e39",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Get Usuário",
+        "statusCode": "",
+        "headers": {},
+        "x": 1120,
+        "y": 590,
+        "wires": []
+    },
+    {
+        "id": "7a9860895c7d3bc8",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Confere o cabeçalho",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\nfunction usuarioInformado() {\n    return idDe(cabecalho('x-hub-usuario'));\n}\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== usuario-consulta\n// GET /GETusuario — dados do usuário do cabeçalho X-Hub-Usuario.\nmsg.usuarioId = usuarioInformado();\nif (!msg.usuarioId) return [null, semUsuario()];\nreturn [consultar({ _id: msg.usuarioId, colecao: 'usuario' }), null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 590,
+        "wires": [
+            [
+                "bb75727f94163a75"
+            ],
+            [
+                "f9b69a40cd473e39"
+            ]
+        ]
+    },
+    {
+        "id": "bb75727f94163a75",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca o usuário",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 590,
+        "wires": [
+            [
+                "806065187c0ef755"
+            ]
+        ]
+    },
+    {
+        "id": "806065187c0ef755",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction usuarioPublico(u) {\n    return { id: idDe(u._id), nome: u.nome, curso: u.curso || '', criadoEm: u.criadoEm || agora() };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== usuario-resposta\nconst usuario = documentos(msg.payload)[0];\nreturn usuario ? responder(200, usuarioPublico(usuario)) : semUsuario();\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 590,
+        "wires": [
+            [
+                "f9b69a40cd473e39"
+            ]
+        ]
+    },
+    {
+        "id": "549f22985de4c1f2",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Update Usuário [UPDATEusuario]",
+        "url": "/UPDATEusuario",
+        "method": "put",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 660,
+        "wires": [
+            [
+                "ff6478ac23fa2322"
+            ]
+        ]
+    },
+    {
+        "id": "52bb95bce95befbc",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Update Usuário",
+        "statusCode": "",
+        "headers": {},
+        "x": 1600,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "ff6478ac23fa2322",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Valida o pedido",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nconst LIMITES = {\n    titulo: [5, 150], descricao: [20, 200], disciplina: [2, 150], instituicao: [2, 120],\n    curso: [0, 120], autor: [2, 80], nome: [2, 80], link: 500\n};\n\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction texto(valor) {\n    return typeof valor === 'string' ? valor.trim() : '';\n}\n\n/** Conta caracteres como o Swift conta (um emoji composto vale 1). */\nfunction caracteres(valor) {\n    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {\n        let total = 0;\n        const partes = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' }).segment(valor);\n        for (const parte of partes) { if (parte) total++; }\n        return total;\n    }\n    return Array.from(valor).length;\n}\n\nfunction tamanhoOk(valor, campo) {\n    const n = caracteres(valor);\n    return n >= LIMITES[campo][0] && n <= LIMITES[campo][1];\n}\n\nfunction cabecalho(nome) {\n    const valor = ((msg.req && msg.req.headers) || {})[nome];\n    return Array.isArray(valor) ? String(valor[0] || '') : String(valor || '');\n}\n\n/** Corpo JSON da requisição (guardado em msg.corpo, porque msg.payload muda a cada nó). */\nfunction corpoDaRequisicao() {\n    const p = msg.payload;\n    return p && typeof p === 'object' && !Array.isArray(p) ? p : {};\n}\n\nfunction usuarioInformado() {\n    return idDe(cabecalho('x-hub-usuario'));\n}\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction validarUsuario(corpo) {\n    const nome = texto(corpo.nome);\n    const curso = texto(corpo.curso);\n    const erros = [];\n    if (!tamanhoOk(nome, 'nome')) erros.push('nome: de 2 a 80 caracteres');\n    if (!tamanhoOk(curso, 'curso')) erros.push('curso: até 120 caracteres');\n    return { erros: erros, nome: nome, curso: curso };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction invalido(detalhes) {\n    return responder(400, { erro: 'Dados inválidos', detalhes: detalhes });\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== usuario-atualizar-consulta\n// PUT /UPDATEusuario — corpo { nome, curso } do usuário do cabeçalho X-Hub-Usuario.\nmsg.usuarioId = usuarioInformado();\nif (!msg.usuarioId) return [null, semUsuario()];\nconst v = validarUsuario(corpoDaRequisicao());\nif (v.erros.length) return [null, invalido(v.erros)];\nmsg.nome = v.nome;\nmsg.curso = v.curso;\nreturn [consultar({ _id: msg.usuarioId, colecao: 'usuario' }), null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 660,
+        "wires": [
+            [
+                "784a902f88b297e1"
+            ],
+            [
+                "52bb95bce95befbc"
+            ]
+        ]
+    },
+    {
+        "id": "784a902f88b297e1",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca o usuário",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 660,
+        "wires": [
+            [
+                "5c2d7e07f026f354"
+            ]
+        ]
+    },
+    {
+        "id": "5c2d7e07f026f354",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Junta os dados",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\nfunction semUsuario() {\n    return responder(401, {\n        erro: 'Usuário não identificado',\n        detalhes: ['Cadastre-se em POST /POSTusuario e envie o id recebido no cabeçalho X-Hub-Usuario']\n    });\n}\n\n// ===================================================================== usuario-atualizar-gravar\nconst atual = documentos(msg.payload)[0];\nif (!atual) return [null, semUsuario()];\nconst doc = Object.assign({}, atual, { nome: msg.nome, curso: msg.curso, atualizadoEm: agora() });\nmsg.documento = doc;\nmsg.payload = doc;\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 660,
+        "wires": [
+            [
+                "af97977b16cd4a71"
+            ],
+            [
+                "52bb95bce95befbc"
+            ]
+        ]
+    },
+    {
+        "id": "af97977b16cd4a71",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Grava o usuário",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "insert",
+        "x": 1120,
+        "y": 660,
+        "wires": [
+            [
+                "101af8f619b75789"
+            ]
+        ]
+    },
+    {
+        "id": "101af8f619b75789",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction agora() {\n    // ISO 8601 sem milissegundos (formato lido direto pelo JSONDecoder do iOS)\n    return new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nfunction idDe(valor) {\n    return valor === undefined || valor === null ? '' : String(valor).trim().toUpperCase();\n}\n\nfunction usuarioPublico(u) {\n    return { id: idDe(u._id), nome: u.nome, curso: u.curso || '', criadoEm: u.criadoEm || agora() };\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== usuario-atualizar-resposta\nreturn responder(200, usuarioPublico(msg.documento));\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1360,
+        "y": 660,
+        "wires": [
+            [
+                "52bb95bce95befbc"
+            ]
+        ]
+    },
+    {
+        "id": "27b7bf5a8ff7c232",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Get Disciplinas [GETdisciplinas]",
+        "url": "/GETdisciplinas",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 730,
+        "wires": [
+            [
+                "f7cc006adfc19b39"
+            ]
+        ]
+    },
+    {
+        "id": "d2f8108e819f74e6",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Get Disciplinas",
+        "statusCode": "",
+        "headers": {},
+        "x": 1120,
+        "y": 730,
+        "wires": []
+    },
+    {
+        "id": "f7cc006adfc19b39",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta disciplinas",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== disciplinas-consulta\n// GET /GETdisciplinas — disciplinas usadas nas publicações, com o total de cada uma.\nreturn consultar({ colecao: 'publicacao' }, ['disciplina']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 730,
+        "wires": [
+            [
+                "30c96d924ef5f7d2"
+            ]
+        ]
+    },
+    {
+        "id": "30c96d924ef5f7d2",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca as publicações",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 730,
+        "wires": [
+            [
+                "357674b0377a1035"
+            ]
+        ]
+    },
+    {
+        "id": "357674b0377a1035",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Conta por disciplina",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction texto(valor) {\n    return typeof valor === 'string' ? valor.trim() : '';\n}\n\nfunction normalizar(valor) {\n    return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== disciplinas-resposta\nconst contagem = {};\ndocumentos(msg.payload).forEach(function (d) {\n    const nome = texto(d.disciplina);\n    if (!nome) return;\n    const chave = normalizar(nome);\n    const item = contagem[chave] || (contagem[chave] = { nome: nome, totalPublicacoes: 0 });\n    item.totalPublicacoes += 1;\n});\nconst lista = Object.values(contagem).sort(function (a, b) { return a.nome.localeCompare(b.nome, 'pt-BR'); });\nreturn responder(200, lista);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 730,
+        "wires": [
+            [
+                "d2f8108e819f74e6"
+            ]
+        ]
+    },
+    {
+        "id": "6ce0f38e8e63e812",
+        "type": "http in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Get Subáreas [GETsubareas]",
+        "url": "/GETsubareas",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 800,
+        "wires": [
+            [
+                "3d25613e7228de15"
+            ]
+        ]
+    },
+    {
+        "id": "e6e0128b08866444",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Get Subáreas",
+        "statusCode": "",
+        "headers": {},
+        "x": 640,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "3d25613e7228de15",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Subáreas do CNPq",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// Subáreas de cada grande área (tabela do CNPq; a mesma lista do app em CatalogoAreas.swift).\n// Bloco gerado por ferramentas/catalogo/gerar_catalogo.py: não edite à mão.\nconst SUBAREAS = {\n    exatas: ['Astronomia', 'Ciência da Computação', 'Física', 'Geociências', 'Matemática', 'Oceanografia', 'Probabilidade e Estatística', 'Química'],\n    agrarias: ['Agronomia/Agrometeorologia', 'Agronomia/Ciência do Solo', 'Agronomia/Extensão Rural', 'Agronomia/Fitossanidade', 'Agronomia/Fitotecnia', 'Agronomia/Floricultura, Parques e Jardins', 'Ciência e Tecnologia de Alimentos/Ciência de Alimentos', 'Ciência e Tecnologia de Alimentos/Engenharia de Alimentos', 'Ciência e Tecnologia de Alimentos/Tecnologia de Alimentos', 'Engenharia Agrícola', 'Medicina Veterinária/Clínica e Cirurgia Animal', 'Medicina Veterinária/Inspeção de Produtos de Origem Animal', 'Medicina Veterinária/Medicina Veterinária Preventiva', 'Medicina Veterinária/Patologia Animal', 'Medicina Veterinária/Reprodução Animal', 'Recursos Florestais e Engenharia Florestal', 'Recursos Pesqueiros e Engenharia de Pesca', 'Zootecnia/Ecologia dos Animais Domésticos e Etologia', 'Zootecnia/Genética e Melhoramento dos Animais Domésticos', 'Zootecnia/Nutrição e Alimentação Animal', 'Zootecnia/Pastagem e Forragicultura', 'Zootecnia/Produção Animal'],\n    biologicas: ['Biofísica', 'Biologia Geral', 'Bioquímica', 'Botânica', 'Ecologia', 'Farmacologia', 'Fisiologia', 'Genética', 'Imunologia', 'Microbiologia', 'Morfologia', 'Parasitologia', 'Zoologia'],\n    saude: ['Educação Física', 'Enfermagem', 'Farmácia', 'Fisioterapia e Terapia Ocupacional', 'Fonoaudiologia', 'Medicina/Clínica Médica', 'Medicina/Cirurgia', 'Medicina/Saúde Materno-Infantil', 'Medicina/Psiquiatria', 'Medicina/Anatomia Patológica e Patologia Clínica', 'Medicina/Radiologia Médica', 'Medicina/Medicina Legal e Deontologia', 'Nutrição', 'Odontologia', 'Saúde Coletiva'],\n    humanas: ['Antropologia', 'Arqueologia', 'Ciência Política', 'Educação/Fundamentos da Educação', 'Educação/Administração Educacional', 'Educação/Planejamento e Avaliação Educacional', 'Educação/Ensino-Aprendizagem', 'Educação/Currículo', 'Educação/Orientação e Aconselhamento', 'Educação/Tópicos Especiais em Educação', 'Filosofia', 'Geografia', 'História', 'Psicologia', 'Sociologia'],\n    sociaisAplicadas: ['Administração', 'Arquitetura e Urbanismo', 'Arquivologia', 'Comunicação', 'Demografia', 'Desenho Industrial', 'Direito', 'Economia', 'Planejamento Urbano e Regional', 'Serviço Social', 'Turismo'],\n    engenharias: ['Engenharia Acústica', 'Engenharia Aeroespacial', 'Engenharia Biomédica', 'Engenharia Civil', 'Engenharia de Materiais e Metalúrgica', 'Engenharia de Minas', 'Engenharia de Produção', 'Engenharia de Transportes', 'Engenharia Elétrica', 'Engenharia Mecânica', 'Engenharia Naval e Oceânica', 'Engenharia Nuclear', 'Engenharia Química', 'Engenharia Sanitária'],\n    linguisticaLetrasArtes: ['Artes/Artes Plásticas', 'Artes/Dança', 'Artes/Música', 'Artes/Teatro', 'Letras', 'Linguística'],\n};\n\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== subareas\n// GET /GETsubareas — subáreas de cada grande área (tabela do CNPq), para conferir antes de publicar.\nreturn responder(200, SUBAREAS);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 800,
+        "wires": [
+            [
+                "e6e0128b08866444"
+            ]
+        ]
+    },
+    {
+        "id": "640d6719774e6b92",
+        "type": "http response",
+        "z": "ff3f71c0b29878ed",
+        "name": "Response Erro",
+        "statusCode": "",
+        "headers": {},
+        "x": 640,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "f1a5dfa1e4d9b3e0",
+        "type": "debug",
+        "z": "ff3f71c0b29878ed",
+        "name": "Erros",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 620,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "7c73b202d4747533",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a resposta de erro",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\nfunction responder(status, dados) {\n    msg.statusCode = status;\n    msg.headers = {\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': 'no-store'\n    };\n    msg.payload = dados;\n    return msg;\n}\n\n// ===================================================================== erro\n// Nó catch: um erro no Cloudant ou no fluxo vira uma resposta JSON (a requisição não fica sem resposta).\nconst detalhe = String((msg.error && (msg.error.message || msg.error)) || 'erro desconhecido');\nconst origem = (msg.error && msg.error.source && msg.error.source.type) || '';\nlet status = 502;\nlet aviso = 'Falha ao acessar o Cloudant.';\nif (origem === 'function') {\n    status = 500;\n    aviso = 'Erro interno no fluxo do Hub Acadêmico.';\n} else if (/\\b(401|403)\\b|unauthori|forbidden|iam|api ?key|credential/i.test(detalhe)) {\n    aviso = 'O Cloudant recusou o acesso. Confira a API key no nó de configuração do Cloudant.';\n} else if (/\\b429\\b|too many/i.test(detalhe)) {\n    status = 503;\n    aviso = 'O Cloudant pediu para esperar (limite de requisições do plano Lite). Tente de novo em alguns segundos.';\n} else if (/\\b409\\b|conflict/i.test(detalhe)) {\n    status = 409;\n    aviso = 'Outra pessoa alterou este registro ao mesmo tempo. Tente de novo.';\n} else if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ECONNRESET|socket|network/i.test(detalhe)) {\n    aviso = 'Sem conexão com o Cloudant. Confira a internet do computador que roda o Node-RED.';\n}\nnode.status({ fill: 'red', shape: 'ring', text: aviso.slice(0, 40) });\nif (msg.res) return [responder(status, { erro: aviso, detalhes: [detalhe] }), null];\nmsg.payload = aviso + ' (' + detalhe + ')';\nreturn [null, msg];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 900,
+        "wires": [
+            [
+                "640d6719774e6b92"
+            ],
+            [
+                "f1a5dfa1e4d9b3e0"
+            ]
+        ]
+    },
+    {
+        "id": "67c03786fdc11d97",
+        "type": "catch",
+        "z": "ff3f71c0b29878ed",
+        "name": "Erros do Cloudant e do fluxo",
+        "scope": null,
+        "uncaught": false,
+        "x": 170,
+        "y": 900,
+        "wires": [
+            [
+                "7c73b202d4747533"
+            ]
+        ]
+    },
+    {
+        "id": "3c25ca3948d38c82",
+        "type": "comment",
+        "z": "ff3f71c0b29878ed",
+        "name": "Banco: Cloudant hub-academico-10 · conexão e exemplos",
+        "info": "- **Ao implantar:** testa a conexão com o Cloudant e mostra os totais na barra de depuração (🐞). Com o banco sem nenhuma publicação, cria as 12 publicações de exemplo (as mesmas do app).\n- **Criar ou restaurar exemplos:** grava de novo as publicações de exemplo, com as médias originais (4 por segundo, por causa do limite de gravações do plano Lite do Cloudant).\n- **Remover exemplos:** apaga só as publicações de exemplo; as publicadas pela turma ficam.",
+        "x": 260,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "d166682b6fb64739",
+        "type": "debug",
+        "z": "ff3f71c0b29878ed",
+        "name": "Situação do banco",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1960,
+        "y": 1080,
+        "wires": []
+    },
+    {
+        "id": "610633166a3f9fb0",
+        "type": "inject",
+        "z": "ff3f71c0b29878ed",
+        "name": "Ao implantar: testa a conexão",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "3",
+        "topic": "conexao",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 1080,
+        "wires": [
+            [
+                "72ed292826666237"
+            ]
+        ]
+    },
+    {
+        "id": "72ed292826666237",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Conta documentos",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== status-consulta\n// GET /GETstatus (e o teste de conexão ao implantar): conta os documentos de cada coleção.\nreturn consultar({ colecao: { $in: ['publicacao', 'avaliacao', 'usuario'] } }, ['_id', 'colecao', 'publicacaoId', 'disciplina']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 1080,
+        "wires": [
+            [
+                "6be962eaa32dfabd"
+            ]
+        ]
+    },
+    {
+        "id": "6be962eaa32dfabd",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta o banco",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 700,
+        "y": 1080,
+        "wires": [
+            [
+                "c91cbefa93d5fa8e"
+            ]
+        ]
+    },
+    {
+        "id": "c91cbefa93d5fa8e",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Mostra a situação",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js; edite lá) ----\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== conexao-resposta\n// Resultado do teste de conexão feito ao implantar. Banco sem nenhuma publicação:\n// a 2ª saída cria as publicações de exemplo (as mesmas do app).\nconst lista = documentos(msg.payload);\nconst contar = function (colecao) { return lista.filter(function (d) { return d.colecao === colecao; }).length; };\nconst publicacoes = contar('publicacao');\nnode.status({ fill: 'green', shape: 'dot', text: 'Cloudant conectado · ' + publicacoes + ' publicações' });\nmsg.payload = 'Cloudant conectado: ' + publicacoes + ' publicações, ' + contar('usuario') + ' usuários e ' +\n    contar('avaliacao') + ' avaliações no banco.' + (publicacoes ? '' : ' Criando as publicações de exemplo…');\nreturn [msg, publicacoes ? null : RED.util.cloneMessage(msg)];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 1080,
+        "wires": [
+            [
+                "d166682b6fb64739"
+            ],
+            [
+                "e8841b4f0f2178e2"
+            ]
+        ]
+    },
+    {
+        "id": "92455a8583053387",
+        "type": "inject",
+        "z": "ff3f71c0b29878ed",
+        "name": "Criar ou restaurar exemplos",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "3",
+        "topic": "exemplos",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 1150,
+        "wires": [
+            [
+                "e8841b4f0f2178e2"
+            ]
+        ]
+    },
+    {
+        "id": "e8841b4f0f2178e2",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca exemplos existentes",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js e src/exemplos.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nconst EXEMPLOS = [\n    {\n        id: '3C657F19-D52A-5F45-AE46-BC31046D13C3',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Monitor IoT de ruído nas oficinas do CTISM',\n        descricao: 'Protótipo com ESP32 e sensor de som que mede o ruído das oficinas do CTISM em tempo real e emite alerta quando o nível passa de 85 dB, apoiando a prevenção de perdas auditivas.',\n        imagemLink: 'asset://imagem-monitor-ruido',\n        link: 'https://example.com/hub-academico/monitor-ruido',\n        plataforma: 'linkedin',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Ana Clara Machado', 'Lucas Ferreira'],\n        media: 4.8,\n        totalAvaliacoes: 37,\n        dias: 2\n    },\n    {\n        id: 'F40E46BC-DF8C-53D5-B16F-759162D6B227',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Dosimetria de ruído na oficina de soldagem',\n        descricao: 'Medições com dosímetro durante aulas práticas de soldagem, comparadas aos limites da NR-15, com recomendações de protetores auriculares e de rodízio das atividades.',\n        imagemLink: 'asset://imagem-dosimetria',\n        link: 'https://example.com/hub-academico/dosimetria',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Bruna Teixeira'],\n        media: 4.6,\n        totalAvaliacoes: 21,\n        dias: 5\n    },\n    {\n        id: '1490DF63-6FF1-59F1-873B-9E4C55066D48',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Higiene Ocupacional – 2026/1',\n        descricao: 'Primeira avaliação do semestre, com questões sobre agentes físicos, limites de tolerância e uso de EPIs. Inclui o gabarito comentado.',\n        imagemLink: 'asset://imagem-prova-higiene',\n        link: null,\n        plataforma: 'outro',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Turma 2026/1'],\n        media: 4.5,\n        totalAvaliacoes: 12,\n        dias: 9\n    },\n    {\n        id: '5D53CA11-EF7D-5823-B5D4-724D8DA80503',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Estufa automatizada com ESP32 e sensores de umidade',\n        descricao: 'Controle de irrigação e ventilação de uma estufa didática com sensores de solo e de ar, painel web em tempo real e alertas pelo celular.',\n        imagemLink: 'asset://imagem-estufa',\n        link: 'https://example.com/hub-academico/estufa',\n        plataforma: 'instagram',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Sistemas Embarcados',\n        curso: 'Técnico em Internet das Coisas Integrado ao Ensino Médio',\n        autores: ['Pedro Henrique Lopes', 'Júlia Martins'],\n        media: 4.7,\n        totalAvaliacoes: 18,\n        dias: 40\n    },\n    {\n        id: 'BD327E0E-2BF6-5A4B-9609-F4DF21501F33',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Análise de vulnerabilidades em redes Wi-Fi',\n        descricao: 'Estudo de configurações comuns de roteadores, testes em laboratório isolado e um guia de boas práticas para proteger redes domésticas e de pequenas empresas.',\n        imagemLink: 'asset://imagem-wifi',\n        link: 'https://example.com/hub-academico/wifi',\n        plataforma: 'blog',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Segurança de Redes',\n        curso: 'Curso Superior de Tecnologia em Segurança Cibernética',\n        autores: ['Rafael Costa'],\n        media: 4.4,\n        totalAvaliacoes: 9,\n        dias: 12\n    },\n    {\n        id: '77478356-56C0-59DE-9ABE-A94D5A433B39',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Braço robótico didático impresso em 3D',\n        descricao: 'Braço de quatro eixos impresso em PLA, acionado por servomotores e Arduino, para ensinar cinemática e programação nas aulas de fabricação.',\n        imagemLink: 'asset://imagem-braco-robotico',\n        link: 'https://example.com/hub-academico/braco-robotico',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Mecânica',\n        disciplina: 'Manufatura Aditiva',\n        curso: 'Curso Superior de Tecnologia em Fabricação Mecânica',\n        autores: ['Gabriel Souza', 'Larissa Prado'],\n        media: 4.9,\n        totalAvaliacoes: 25,\n        dias: 60\n    },\n    {\n        id: '16B50825-18E3-55FC-80B9-535279A01B07',\n        tipo: 'prova',\n        ano: 2025,\n        titulo: 'Prova de Eletricidade Básica – 2025/2',\n        descricao: 'Avaliação com circuitos em série e em paralelo, Lei de Ohm e potência elétrica. Questões objetivas e dissertativas.',\n        imagemLink: 'asset://imagem-prova-eletricidade',\n        link: null,\n        plataforma: 'outro',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Eletricidade Básica',\n        curso: 'Técnico em Eletrotécnica',\n        autores: ['Turma 2025/2'],\n        media: 4.2,\n        totalAvaliacoes: 15,\n        dias: 90\n    },\n    {\n        id: 'C69CD2E5-D3AF-55C0-A30C-086CA69A4BB3',\n        tipo: 'material',\n        ano: 2026,\n        titulo: 'Apostila de segurança em máquinas (NR-12)',\n        descricao: 'Resumo ilustrado dos requisitos da NR-12, com exemplos de proteções, dispositivos de parada de emergência e uma lista de verificação para as oficinas.',\n        imagemLink: 'asset://imagem-apostila-nr12',\n        link: 'https://example.com/hub-academico/nr12',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Prevenção de Riscos em Máquinas',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Monitoria de Segurança do Trabalho'],\n        media: 4.8,\n        totalAvaliacoes: 40,\n        dias: 20\n    },\n    {\n        id: '8C08A1F4-D7EA-5CA2-B2F2-D47A1ABCAF67',\n        tipo: 'material',\n        ano: 2025,\n        titulo: 'Videoaulas de Arduino para iniciantes',\n        descricao: 'Série de vídeos curtos sobre entradas e saídas digitais, sensores analógicos e comunicação serial, com os códigos usados em aula.',\n        imagemLink: 'asset://imagem-arduino',\n        link: 'https://example.com/hub-academico/arduino',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Microcontroladores',\n        curso: 'Técnico em Automação Industrial',\n        autores: ['Diego Ramos'],\n        media: 4.6,\n        totalAvaliacoes: 22,\n        dias: 75\n    },\n    {\n        id: 'B3D302B3-DE7D-5C0F-9576-E9DF7C263587',\n        tipo: 'trabalho',\n        ano: 2025,\n        titulo: 'Ergonomia nos laboratórios de informática',\n        descricao: 'Avaliação de postura, altura das mesas e iluminação em dois laboratórios, com propostas de ajustes de baixo custo e orientações de pausas.',\n        imagemLink: 'asset://imagem-ergonomia',\n        link: 'https://example.com/hub-academico/ergonomia',\n        plataforma: 'linkedin',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Ergonomia',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Fernanda Alves', 'Tiago Nunes'],\n        media: 4.3,\n        totalAvaliacoes: 11,\n        dias: 100\n    },\n    {\n        id: 'C507AB1B-3494-558B-8599-CBE687BCB895',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Site acessível para a biblioteca do colégio',\n        descricao: 'Catálogo on-line com contraste ajustável, leitura por voz e navegação por teclado, seguindo as recomendações do eMAG e da WCAG.',\n        imagemLink: 'asset://imagem-site-acessivel',\n        link: 'https://example.com/hub-academico/biblioteca',\n        plataforma: 'github',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Desenvolvimento Web',\n        curso: 'Técnico em Informática para Internet Integrado ao Ensino Médio',\n        autores: ['Isadora Ribeiro'],\n        media: 4.5,\n        totalAvaliacoes: 14,\n        dias: 15\n    },\n    {\n        id: 'CBE337DB-4AB3-5810-ADC6-F904D064E18C',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Redes de Computadores I – 2026/1',\n        descricao: 'Questões sobre modelo OSI, endereçamento IPv4, sub-redes e comandos básicos de diagnóstico, com espaço para os cálculos.',\n        imagemLink: 'asset://imagem-prova-redes',\n        link: null,\n        plataforma: 'outro',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Redes de Computadores I',\n        curso: 'Curso Superior de Tecnologia em Redes de Computadores',\n        autores: ['Turma 2026/1'],\n        media: 4.1,\n        totalAvaliacoes: 8,\n        dias: 7\n    }\n];\n\n// ===================================================================== exemplos-consulta\n// Cria (ou restaura) as 12 publicações de exemplo, as mesmas do app.\n// 1) busca as que já existem, para atualizar com a _rev atual em vez de duplicar.\nreturn consultar({ _id: { $in: EXEMPLOS.map(function (e) { return e.id; }) } }, ['_id', '_rev']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 1150,
+        "wires": [
+            [
+                "4b670163ddcd6793"
+            ]
+        ]
+    },
+    {
+        "id": "4b670163ddcd6793",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta os exemplos",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 700,
+        "y": 1150,
+        "wires": [
+            [
+                "563a829bdb6c7c99"
+            ]
+        ]
+    },
+    {
+        "id": "563a829bdb6c7c99",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta os exemplos",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js e src/exemplos.js; edite lá) ----\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nconst INSTITUICAO_EXEMPLOS = 'CTISM – UFSM';\n\nconst EXEMPLOS = [\n    {\n        id: '3C657F19-D52A-5F45-AE46-BC31046D13C3',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Monitor IoT de ruído nas oficinas do CTISM',\n        descricao: 'Protótipo com ESP32 e sensor de som que mede o ruído das oficinas do CTISM em tempo real e emite alerta quando o nível passa de 85 dB, apoiando a prevenção de perdas auditivas.',\n        imagemLink: 'asset://imagem-monitor-ruido',\n        link: 'https://example.com/hub-academico/monitor-ruido',\n        plataforma: 'linkedin',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Ana Clara Machado', 'Lucas Ferreira'],\n        media: 4.8,\n        totalAvaliacoes: 37,\n        dias: 2\n    },\n    {\n        id: 'F40E46BC-DF8C-53D5-B16F-759162D6B227',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Dosimetria de ruído na oficina de soldagem',\n        descricao: 'Medições com dosímetro durante aulas práticas de soldagem, comparadas aos limites da NR-15, com recomendações de protetores auriculares e de rodízio das atividades.',\n        imagemLink: 'asset://imagem-dosimetria',\n        link: 'https://example.com/hub-academico/dosimetria',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Bruna Teixeira'],\n        media: 4.6,\n        totalAvaliacoes: 21,\n        dias: 5\n    },\n    {\n        id: '1490DF63-6FF1-59F1-873B-9E4C55066D48',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Higiene Ocupacional – 2026/1',\n        descricao: 'Primeira avaliação do semestre, com questões sobre agentes físicos, limites de tolerância e uso de EPIs. Inclui o gabarito comentado.',\n        imagemLink: 'asset://imagem-prova-higiene',\n        link: null,\n        plataforma: 'outro',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Turma 2026/1'],\n        media: 4.5,\n        totalAvaliacoes: 12,\n        dias: 9\n    },\n    {\n        id: '5D53CA11-EF7D-5823-B5D4-724D8DA80503',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Estufa automatizada com ESP32 e sensores de umidade',\n        descricao: 'Controle de irrigação e ventilação de uma estufa didática com sensores de solo e de ar, painel web em tempo real e alertas pelo celular.',\n        imagemLink: 'asset://imagem-estufa',\n        link: 'https://example.com/hub-academico/estufa',\n        plataforma: 'instagram',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Sistemas Embarcados',\n        curso: 'Técnico em Internet das Coisas Integrado ao Ensino Médio',\n        autores: ['Pedro Henrique Lopes', 'Júlia Martins'],\n        media: 4.7,\n        totalAvaliacoes: 18,\n        dias: 40\n    },\n    {\n        id: 'BD327E0E-2BF6-5A4B-9609-F4DF21501F33',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Análise de vulnerabilidades em redes Wi-Fi',\n        descricao: 'Estudo de configurações comuns de roteadores, testes em laboratório isolado e um guia de boas práticas para proteger redes domésticas e de pequenas empresas.',\n        imagemLink: 'asset://imagem-wifi',\n        link: 'https://example.com/hub-academico/wifi',\n        plataforma: 'blog',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Segurança de Redes',\n        curso: 'Curso Superior de Tecnologia em Segurança Cibernética',\n        autores: ['Rafael Costa'],\n        media: 4.4,\n        totalAvaliacoes: 9,\n        dias: 12\n    },\n    {\n        id: '77478356-56C0-59DE-9ABE-A94D5A433B39',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Braço robótico didático impresso em 3D',\n        descricao: 'Braço de quatro eixos impresso em PLA, acionado por servomotores e Arduino, para ensinar cinemática e programação nas aulas de fabricação.',\n        imagemLink: 'asset://imagem-braco-robotico',\n        link: 'https://example.com/hub-academico/braco-robotico',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Mecânica',\n        disciplina: 'Manufatura Aditiva',\n        curso: 'Curso Superior de Tecnologia em Fabricação Mecânica',\n        autores: ['Gabriel Souza', 'Larissa Prado'],\n        media: 4.9,\n        totalAvaliacoes: 25,\n        dias: 60\n    },\n    {\n        id: '16B50825-18E3-55FC-80B9-535279A01B07',\n        tipo: 'prova',\n        ano: 2025,\n        titulo: 'Prova de Eletricidade Básica – 2025/2',\n        descricao: 'Avaliação com circuitos em série e em paralelo, Lei de Ohm e potência elétrica. Questões objetivas e dissertativas.',\n        imagemLink: 'asset://imagem-prova-eletricidade',\n        link: null,\n        plataforma: 'outro',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Eletricidade Básica',\n        curso: 'Técnico em Eletrotécnica',\n        autores: ['Turma 2025/2'],\n        media: 4.2,\n        totalAvaliacoes: 15,\n        dias: 90\n    },\n    {\n        id: 'C69CD2E5-D3AF-55C0-A30C-086CA69A4BB3',\n        tipo: 'material',\n        ano: 2026,\n        titulo: 'Apostila de segurança em máquinas (NR-12)',\n        descricao: 'Resumo ilustrado dos requisitos da NR-12, com exemplos de proteções, dispositivos de parada de emergência e uma lista de verificação para as oficinas.',\n        imagemLink: 'asset://imagem-apostila-nr12',\n        link: 'https://example.com/hub-academico/nr12',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Prevenção de Riscos em Máquinas',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Monitoria de Segurança do Trabalho'],\n        media: 4.8,\n        totalAvaliacoes: 40,\n        dias: 20\n    },\n    {\n        id: '8C08A1F4-D7EA-5CA2-B2F2-D47A1ABCAF67',\n        tipo: 'material',\n        ano: 2025,\n        titulo: 'Videoaulas de Arduino para iniciantes',\n        descricao: 'Série de vídeos curtos sobre entradas e saídas digitais, sensores analógicos e comunicação serial, com os códigos usados em aula.',\n        imagemLink: 'asset://imagem-arduino',\n        link: 'https://example.com/hub-academico/arduino',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Microcontroladores',\n        curso: 'Técnico em Automação Industrial',\n        autores: ['Diego Ramos'],\n        media: 4.6,\n        totalAvaliacoes: 22,\n        dias: 75\n    },\n    {\n        id: 'B3D302B3-DE7D-5C0F-9576-E9DF7C263587',\n        tipo: 'trabalho',\n        ano: 2025,\n        titulo: 'Ergonomia nos laboratórios de informática',\n        descricao: 'Avaliação de postura, altura das mesas e iluminação em dois laboratórios, com propostas de ajustes de baixo custo e orientações de pausas.',\n        imagemLink: 'asset://imagem-ergonomia',\n        link: 'https://example.com/hub-academico/ergonomia',\n        plataforma: 'linkedin',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Ergonomia',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Fernanda Alves', 'Tiago Nunes'],\n        media: 4.3,\n        totalAvaliacoes: 11,\n        dias: 100\n    },\n    {\n        id: 'C507AB1B-3494-558B-8599-CBE687BCB895',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Site acessível para a biblioteca do colégio',\n        descricao: 'Catálogo on-line com contraste ajustável, leitura por voz e navegação por teclado, seguindo as recomendações do eMAG e da WCAG.',\n        imagemLink: 'asset://imagem-site-acessivel',\n        link: 'https://example.com/hub-academico/biblioteca',\n        plataforma: 'github',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Desenvolvimento Web',\n        curso: 'Técnico em Informática para Internet Integrado ao Ensino Médio',\n        autores: ['Isadora Ribeiro'],\n        media: 4.5,\n        totalAvaliacoes: 14,\n        dias: 15\n    },\n    {\n        id: 'CBE337DB-4AB3-5810-ADC6-F904D064E18C',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Redes de Computadores I – 2026/1',\n        descricao: 'Questões sobre modelo OSI, endereçamento IPv4, sub-redes e comandos básicos de diagnóstico, com espaço para os cálculos.',\n        imagemLink: 'asset://imagem-prova-redes',\n        link: null,\n        plataforma: 'outro',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Redes de Computadores I',\n        curso: 'Curso Superior de Tecnologia em Redes de Computadores',\n        autores: ['Turma 2026/1'],\n        media: 4.1,\n        totalAvaliacoes: 8,\n        dias: 7\n    }\n];\n\n/** Documento do Cloudant para um exemplo (avaliações de 4 e 5 estrelas que chegam à média do app). */\nfunction documentoDeExemplo(e) {\n    const cincos = Math.max(0, Math.min(e.totalAvaliacoes, Math.round((e.media - 4) * e.totalAvaliacoes)));\n    return {\n        _id: e.id, colecao: 'publicacao', exemplo: true,\n        tipo: e.tipo, titulo: e.titulo, descricao: e.descricao, autores: e.autores, ano: e.ano,\n        area: e.area, subarea: e.subarea, disciplina: e.disciplina, curso: e.curso,\n        instituicao: INSTITUICAO_EXEMPLOS, link: e.link, plataforma: e.plataforma, imagemLink: e.imagemLink,\n        usuarioId: null,\n        criadoEm: new Date(Date.now() - e.dias * 86400000).toISOString().replace(/\\.\\d{3}Z$/, 'Z'),\n        avaliacoesBase: { soma: cincos * 5 + (e.totalAvaliacoes - cincos) * 4, total: e.totalAvaliacoes }\n    };\n}\n\n// ===================================================================== exemplos-gravar\n// 2) uma mensagem por publicação: o limitador seguinte manda 4 por segundo para o Cloudant\n// (o plano Lite aceita poucas gravações por segundo).\nconst existentes = {};\ndocumentos(msg.payload).forEach(function (d) { existentes[d._id] = d._rev; });\nconst lote = Date.now() + '-' + Math.random().toString(16).slice(2);\nconst atualizados = Object.keys(existentes).length;\nreturn [EXEMPLOS.map(function (e) {\n    const doc = documentoDeExemplo(e);\n    if (existentes[e.id]) doc._rev = existentes[e.id];\n    return { payload: doc, lote: lote, total: EXEMPLOS.length, atualizados: atualizados };\n})];\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 1150,
+        "wires": [
+            [
+                "8c6b73e09113fb2b"
+            ]
+        ]
+    },
+    {
+        "id": "8c6b73e09113fb2b",
+        "type": "delay",
+        "z": "ff3f71c0b29878ed",
+        "name": "4 por segundo (plano Lite)",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "4",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1180,
+        "y": 1150,
+        "wires": [
+            [
+                "ae98cc23de2357c2"
+            ]
+        ]
+    },
+    {
+        "id": "ae98cc23de2357c2",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Grava os exemplos",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "insert",
+        "x": 1420,
+        "y": 1150,
+        "wires": [
+            [
+                "4942c3bd8c17d2be"
+            ]
+        ]
+    },
+    {
+        "id": "4942c3bd8c17d2be",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Resume",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js e src/exemplos.js; edite lá) ----\nconst EXEMPLOS = [\n    {\n        id: '3C657F19-D52A-5F45-AE46-BC31046D13C3',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Monitor IoT de ruído nas oficinas do CTISM',\n        descricao: 'Protótipo com ESP32 e sensor de som que mede o ruído das oficinas do CTISM em tempo real e emite alerta quando o nível passa de 85 dB, apoiando a prevenção de perdas auditivas.',\n        imagemLink: 'asset://imagem-monitor-ruido',\n        link: 'https://example.com/hub-academico/monitor-ruido',\n        plataforma: 'linkedin',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Ana Clara Machado', 'Lucas Ferreira'],\n        media: 4.8,\n        totalAvaliacoes: 37,\n        dias: 2\n    },\n    {\n        id: 'F40E46BC-DF8C-53D5-B16F-759162D6B227',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Dosimetria de ruído na oficina de soldagem',\n        descricao: 'Medições com dosímetro durante aulas práticas de soldagem, comparadas aos limites da NR-15, com recomendações de protetores auriculares e de rodízio das atividades.',\n        imagemLink: 'asset://imagem-dosimetria',\n        link: 'https://example.com/hub-academico/dosimetria',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Bruna Teixeira'],\n        media: 4.6,\n        totalAvaliacoes: 21,\n        dias: 5\n    },\n    {\n        id: '1490DF63-6FF1-59F1-873B-9E4C55066D48',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Higiene Ocupacional – 2026/1',\n        descricao: 'Primeira avaliação do semestre, com questões sobre agentes físicos, limites de tolerância e uso de EPIs. Inclui o gabarito comentado.',\n        imagemLink: 'asset://imagem-prova-higiene',\n        link: null,\n        plataforma: 'outro',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Turma 2026/1'],\n        media: 4.5,\n        totalAvaliacoes: 12,\n        dias: 9\n    },\n    {\n        id: '5D53CA11-EF7D-5823-B5D4-724D8DA80503',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Estufa automatizada com ESP32 e sensores de umidade',\n        descricao: 'Controle de irrigação e ventilação de uma estufa didática com sensores de solo e de ar, painel web em tempo real e alertas pelo celular.',\n        imagemLink: 'asset://imagem-estufa',\n        link: 'https://example.com/hub-academico/estufa',\n        plataforma: 'instagram',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Sistemas Embarcados',\n        curso: 'Técnico em Internet das Coisas Integrado ao Ensino Médio',\n        autores: ['Pedro Henrique Lopes', 'Júlia Martins'],\n        media: 4.7,\n        totalAvaliacoes: 18,\n        dias: 40\n    },\n    {\n        id: 'BD327E0E-2BF6-5A4B-9609-F4DF21501F33',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Análise de vulnerabilidades em redes Wi-Fi',\n        descricao: 'Estudo de configurações comuns de roteadores, testes em laboratório isolado e um guia de boas práticas para proteger redes domésticas e de pequenas empresas.',\n        imagemLink: 'asset://imagem-wifi',\n        link: 'https://example.com/hub-academico/wifi',\n        plataforma: 'blog',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Segurança de Redes',\n        curso: 'Curso Superior de Tecnologia em Segurança Cibernética',\n        autores: ['Rafael Costa'],\n        media: 4.4,\n        totalAvaliacoes: 9,\n        dias: 12\n    },\n    {\n        id: '77478356-56C0-59DE-9ABE-A94D5A433B39',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Braço robótico didático impresso em 3D',\n        descricao: 'Braço de quatro eixos impresso em PLA, acionado por servomotores e Arduino, para ensinar cinemática e programação nas aulas de fabricação.',\n        imagemLink: 'asset://imagem-braco-robotico',\n        link: 'https://example.com/hub-academico/braco-robotico',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Mecânica',\n        disciplina: 'Manufatura Aditiva',\n        curso: 'Curso Superior de Tecnologia em Fabricação Mecânica',\n        autores: ['Gabriel Souza', 'Larissa Prado'],\n        media: 4.9,\n        totalAvaliacoes: 25,\n        dias: 60\n    },\n    {\n        id: '16B50825-18E3-55FC-80B9-535279A01B07',\n        tipo: 'prova',\n        ano: 2025,\n        titulo: 'Prova de Eletricidade Básica – 2025/2',\n        descricao: 'Avaliação com circuitos em série e em paralelo, Lei de Ohm e potência elétrica. Questões objetivas e dissertativas.',\n        imagemLink: 'asset://imagem-prova-eletricidade',\n        link: null,\n        plataforma: 'outro',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Eletricidade Básica',\n        curso: 'Técnico em Eletrotécnica',\n        autores: ['Turma 2025/2'],\n        media: 4.2,\n        totalAvaliacoes: 15,\n        dias: 90\n    },\n    {\n        id: 'C69CD2E5-D3AF-55C0-A30C-086CA69A4BB3',\n        tipo: 'material',\n        ano: 2026,\n        titulo: 'Apostila de segurança em máquinas (NR-12)',\n        descricao: 'Resumo ilustrado dos requisitos da NR-12, com exemplos de proteções, dispositivos de parada de emergência e uma lista de verificação para as oficinas.',\n        imagemLink: 'asset://imagem-apostila-nr12',\n        link: 'https://example.com/hub-academico/nr12',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Prevenção de Riscos em Máquinas',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Monitoria de Segurança do Trabalho'],\n        media: 4.8,\n        totalAvaliacoes: 40,\n        dias: 20\n    },\n    {\n        id: '8C08A1F4-D7EA-5CA2-B2F2-D47A1ABCAF67',\n        tipo: 'material',\n        ano: 2025,\n        titulo: 'Videoaulas de Arduino para iniciantes',\n        descricao: 'Série de vídeos curtos sobre entradas e saídas digitais, sensores analógicos e comunicação serial, com os códigos usados em aula.',\n        imagemLink: 'asset://imagem-arduino',\n        link: 'https://example.com/hub-academico/arduino',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Microcontroladores',\n        curso: 'Técnico em Automação Industrial',\n        autores: ['Diego Ramos'],\n        media: 4.6,\n        totalAvaliacoes: 22,\n        dias: 75\n    },\n    {\n        id: 'B3D302B3-DE7D-5C0F-9576-E9DF7C263587',\n        tipo: 'trabalho',\n        ano: 2025,\n        titulo: 'Ergonomia nos laboratórios de informática',\n        descricao: 'Avaliação de postura, altura das mesas e iluminação em dois laboratórios, com propostas de ajustes de baixo custo e orientações de pausas.',\n        imagemLink: 'asset://imagem-ergonomia',\n        link: 'https://example.com/hub-academico/ergonomia',\n        plataforma: 'linkedin',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Ergonomia',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Fernanda Alves', 'Tiago Nunes'],\n        media: 4.3,\n        totalAvaliacoes: 11,\n        dias: 100\n    },\n    {\n        id: 'C507AB1B-3494-558B-8599-CBE687BCB895',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Site acessível para a biblioteca do colégio',\n        descricao: 'Catálogo on-line com contraste ajustável, leitura por voz e navegação por teclado, seguindo as recomendações do eMAG e da WCAG.',\n        imagemLink: 'asset://imagem-site-acessivel',\n        link: 'https://example.com/hub-academico/biblioteca',\n        plataforma: 'github',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Desenvolvimento Web',\n        curso: 'Técnico em Informática para Internet Integrado ao Ensino Médio',\n        autores: ['Isadora Ribeiro'],\n        media: 4.5,\n        totalAvaliacoes: 14,\n        dias: 15\n    },\n    {\n        id: 'CBE337DB-4AB3-5810-ADC6-F904D064E18C',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Redes de Computadores I – 2026/1',\n        descricao: 'Questões sobre modelo OSI, endereçamento IPv4, sub-redes e comandos básicos de diagnóstico, com espaço para os cálculos.',\n        imagemLink: 'asset://imagem-prova-redes',\n        link: null,\n        plataforma: 'outro',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Redes de Computadores I',\n        curso: 'Curso Superior de Tecnologia em Redes de Computadores',\n        autores: ['Turma 2026/1'],\n        media: 4.1,\n        totalAvaliacoes: 8,\n        dias: 7\n    }\n];\n\n// ===================================================================== exemplos-fim\n// 3) conta as gravações do lote e avisa uma vez só, no fim (erros aparecem no nó \"Erros\").\nconst chave = 'lote:' + msg.lote;\nconst feitos = (context.get(chave) || 0) + 1;\nif (feitos < msg.total) {\n    context.set(chave, feitos);\n    return null;\n}\ncontext.set(chave, undefined);\nnode.status({ fill: 'green', shape: 'dot', text: 'exemplos gravados' });\nmsg.payload = 'Publicações de exemplo gravadas no Cloudant: ' + msg.total + ' de ' + EXEMPLOS.length +\n    (msg.atualizados ? ' (' + msg.atualizados + ' já existiam e foram restauradas).' : '.');\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1660,
+        "y": 1150,
+        "wires": [
+            [
+                "d166682b6fb64739"
+            ]
+        ]
+    },
+    {
+        "id": "df981baf36b99d0c",
+        "type": "inject",
+        "z": "ff3f71c0b29878ed",
+        "name": "Remover exemplos",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "3",
+        "topic": "remover",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 1220,
+        "wires": [
+            [
+                "9f2d317ac559dfa8"
+            ]
+        ]
+    },
+    {
+        "id": "9f2d317ac559dfa8",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca os exemplos",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js e src/exemplos.js; edite lá) ----\n// O Cloudant devolve só 25 documentos por consulta quando não se informa o limite.\nconst LIMITE_CONSULTA = 5000;\n\n/** Prepara a consulta (Mango) para o nó \"cloudantplus in\" no modo query. */\nfunction consultar(selector, campos) {\n    msg.payload = { selector: selector, limit: LIMITE_CONSULTA };\n    if (campos) msg.payload.fields = campos;\n    return msg;\n}\n\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\nconst EXEMPLOS = [\n    {\n        id: '3C657F19-D52A-5F45-AE46-BC31046D13C3',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Monitor IoT de ruído nas oficinas do CTISM',\n        descricao: 'Protótipo com ESP32 e sensor de som que mede o ruído das oficinas do CTISM em tempo real e emite alerta quando o nível passa de 85 dB, apoiando a prevenção de perdas auditivas.',\n        imagemLink: 'asset://imagem-monitor-ruido',\n        link: 'https://example.com/hub-academico/monitor-ruido',\n        plataforma: 'linkedin',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Ana Clara Machado', 'Lucas Ferreira'],\n        media: 4.8,\n        totalAvaliacoes: 37,\n        dias: 2\n    },\n    {\n        id: 'F40E46BC-DF8C-53D5-B16F-759162D6B227',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Dosimetria de ruído na oficina de soldagem',\n        descricao: 'Medições com dosímetro durante aulas práticas de soldagem, comparadas aos limites da NR-15, com recomendações de protetores auriculares e de rodízio das atividades.',\n        imagemLink: 'asset://imagem-dosimetria',\n        link: 'https://example.com/hub-academico/dosimetria',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Bruna Teixeira'],\n        media: 4.6,\n        totalAvaliacoes: 21,\n        dias: 5\n    },\n    {\n        id: '1490DF63-6FF1-59F1-873B-9E4C55066D48',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Higiene Ocupacional – 2026/1',\n        descricao: 'Primeira avaliação do semestre, com questões sobre agentes físicos, limites de tolerância e uso de EPIs. Inclui o gabarito comentado.',\n        imagemLink: 'asset://imagem-prova-higiene',\n        link: null,\n        plataforma: 'outro',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Higiene Ocupacional',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Turma 2026/1'],\n        media: 4.5,\n        totalAvaliacoes: 12,\n        dias: 9\n    },\n    {\n        id: '5D53CA11-EF7D-5823-B5D4-724D8DA80503',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Estufa automatizada com ESP32 e sensores de umidade',\n        descricao: 'Controle de irrigação e ventilação de uma estufa didática com sensores de solo e de ar, painel web em tempo real e alertas pelo celular.',\n        imagemLink: 'asset://imagem-estufa',\n        link: 'https://example.com/hub-academico/estufa',\n        plataforma: 'instagram',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Sistemas Embarcados',\n        curso: 'Técnico em Internet das Coisas Integrado ao Ensino Médio',\n        autores: ['Pedro Henrique Lopes', 'Júlia Martins'],\n        media: 4.7,\n        totalAvaliacoes: 18,\n        dias: 40\n    },\n    {\n        id: 'BD327E0E-2BF6-5A4B-9609-F4DF21501F33',\n        tipo: 'trabalho',\n        ano: 2026,\n        titulo: 'Análise de vulnerabilidades em redes Wi-Fi',\n        descricao: 'Estudo de configurações comuns de roteadores, testes em laboratório isolado e um guia de boas práticas para proteger redes domésticas e de pequenas empresas.',\n        imagemLink: 'asset://imagem-wifi',\n        link: 'https://example.com/hub-academico/wifi',\n        plataforma: 'blog',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Segurança de Redes',\n        curso: 'Curso Superior de Tecnologia em Segurança Cibernética',\n        autores: ['Rafael Costa'],\n        media: 4.4,\n        totalAvaliacoes: 9,\n        dias: 12\n    },\n    {\n        id: '77478356-56C0-59DE-9ABE-A94D5A433B39',\n        tipo: 'projeto',\n        ano: 2025,\n        titulo: 'Braço robótico didático impresso em 3D',\n        descricao: 'Braço de quatro eixos impresso em PLA, acionado por servomotores e Arduino, para ensinar cinemática e programação nas aulas de fabricação.',\n        imagemLink: 'asset://imagem-braco-robotico',\n        link: 'https://example.com/hub-academico/braco-robotico',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Mecânica',\n        disciplina: 'Manufatura Aditiva',\n        curso: 'Curso Superior de Tecnologia em Fabricação Mecânica',\n        autores: ['Gabriel Souza', 'Larissa Prado'],\n        media: 4.9,\n        totalAvaliacoes: 25,\n        dias: 60\n    },\n    {\n        id: '16B50825-18E3-55FC-80B9-535279A01B07',\n        tipo: 'prova',\n        ano: 2025,\n        titulo: 'Prova de Eletricidade Básica – 2025/2',\n        descricao: 'Avaliação com circuitos em série e em paralelo, Lei de Ohm e potência elétrica. Questões objetivas e dissertativas.',\n        imagemLink: 'asset://imagem-prova-eletricidade',\n        link: null,\n        plataforma: 'outro',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Eletricidade Básica',\n        curso: 'Técnico em Eletrotécnica',\n        autores: ['Turma 2025/2'],\n        media: 4.2,\n        totalAvaliacoes: 15,\n        dias: 90\n    },\n    {\n        id: 'C69CD2E5-D3AF-55C0-A30C-086CA69A4BB3',\n        tipo: 'material',\n        ano: 2026,\n        titulo: 'Apostila de segurança em máquinas (NR-12)',\n        descricao: 'Resumo ilustrado dos requisitos da NR-12, com exemplos de proteções, dispositivos de parada de emergência e uma lista de verificação para as oficinas.',\n        imagemLink: 'asset://imagem-apostila-nr12',\n        link: 'https://example.com/hub-academico/nr12',\n        plataforma: 'blog',\n        area: 'engenharias',\n        subarea: 'Engenharia de Produção',\n        disciplina: 'Prevenção de Riscos em Máquinas',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Monitoria de Segurança do Trabalho'],\n        media: 4.8,\n        totalAvaliacoes: 40,\n        dias: 20\n    },\n    {\n        id: '8C08A1F4-D7EA-5CA2-B2F2-D47A1ABCAF67',\n        tipo: 'material',\n        ano: 2025,\n        titulo: 'Videoaulas de Arduino para iniciantes',\n        descricao: 'Série de vídeos curtos sobre entradas e saídas digitais, sensores analógicos e comunicação serial, com os códigos usados em aula.',\n        imagemLink: 'asset://imagem-arduino',\n        link: 'https://example.com/hub-academico/arduino',\n        plataforma: 'youtube',\n        area: 'engenharias',\n        subarea: 'Engenharia Elétrica',\n        disciplina: 'Microcontroladores',\n        curso: 'Técnico em Automação Industrial',\n        autores: ['Diego Ramos'],\n        media: 4.6,\n        totalAvaliacoes: 22,\n        dias: 75\n    },\n    {\n        id: 'B3D302B3-DE7D-5C0F-9576-E9DF7C263587',\n        tipo: 'trabalho',\n        ano: 2025,\n        titulo: 'Ergonomia nos laboratórios de informática',\n        descricao: 'Avaliação de postura, altura das mesas e iluminação em dois laboratórios, com propostas de ajustes de baixo custo e orientações de pausas.',\n        imagemLink: 'asset://imagem-ergonomia',\n        link: 'https://example.com/hub-academico/ergonomia',\n        plataforma: 'linkedin',\n        area: 'saude',\n        subarea: 'Saúde Coletiva',\n        disciplina: 'Ergonomia',\n        curso: 'Técnico em Segurança do Trabalho',\n        autores: ['Fernanda Alves', 'Tiago Nunes'],\n        media: 4.3,\n        totalAvaliacoes: 11,\n        dias: 100\n    },\n    {\n        id: 'C507AB1B-3494-558B-8599-CBE687BCB895',\n        tipo: 'projeto',\n        ano: 2026,\n        titulo: 'Site acessível para a biblioteca do colégio',\n        descricao: 'Catálogo on-line com contraste ajustável, leitura por voz e navegação por teclado, seguindo as recomendações do eMAG e da WCAG.',\n        imagemLink: 'asset://imagem-site-acessivel',\n        link: 'https://example.com/hub-academico/biblioteca',\n        plataforma: 'github',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Desenvolvimento Web',\n        curso: 'Técnico em Informática para Internet Integrado ao Ensino Médio',\n        autores: ['Isadora Ribeiro'],\n        media: 4.5,\n        totalAvaliacoes: 14,\n        dias: 15\n    },\n    {\n        id: 'CBE337DB-4AB3-5810-ADC6-F904D064E18C',\n        tipo: 'prova',\n        ano: 2026,\n        titulo: 'Prova de Redes de Computadores I – 2026/1',\n        descricao: 'Questões sobre modelo OSI, endereçamento IPv4, sub-redes e comandos básicos de diagnóstico, com espaço para os cálculos.',\n        imagemLink: 'asset://imagem-prova-redes',\n        link: null,\n        plataforma: 'outro',\n        area: 'exatas',\n        subarea: 'Ciência da Computação',\n        disciplina: 'Redes de Computadores I',\n        curso: 'Curso Superior de Tecnologia em Redes de Computadores',\n        autores: ['Turma 2026/1'],\n        media: 4.1,\n        totalAvaliacoes: 8,\n        dias: 7\n    }\n];\n\n// ===================================================================== limpar-consulta\n// Remove só as publicações de exemplo (as publicadas pela turma ficam).\nreturn consultar({ _id: { $in: EXEMPLOS.map(function (e) { return e.id; }) } }, ['_id', '_rev']);\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 1220,
+        "wires": [
+            [
+                "fb882cb7c85aea3a"
+            ]
+        ]
+    },
+    {
+        "id": "fb882cb7c85aea3a",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Consulta os exemplos",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 700,
+        "y": 1220,
+        "wires": [
+            [
+                "621dee9cea486b10"
+            ]
+        ]
+    },
+    {
+        "id": "621dee9cea486b10",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Monta a remoção",
+        "func": "// ---- funções comuns usadas por este nó (vêm de src/comum.js e src/exemplos.js; edite lá) ----\n/** Documentos da resposta do Cloudant, nas duas formas que o nó pode devolver. */\nfunction documentos(resposta) {\n    if (Array.isArray(resposta)) return resposta.filter(Boolean);\n    if (resposta && Array.isArray(resposta.docs)) return resposta.docs.filter(Boolean);\n    if (resposta && resposta.result && Array.isArray(resposta.result.docs)) return resposta.result.docs.filter(Boolean);\n    if (resposta && Array.isArray(resposta.rows)) {\n        return resposta.rows.map(function (r) { return r && (r.doc || r); }).filter(Boolean);\n    }\n    return [];\n}\n\n// ===================================================================== limpar-apagar\n// 2) uma mensagem por publicação, com o _id e a _rev que o Cloudant exige para apagar.\nconst docs = documentos(msg.payload);\nif (!docs.length) {\n    msg.payload = 'Não há publicações de exemplo para remover.';\n    return [null, msg];\n}\nconst lote = Date.now() + '-' + Math.random().toString(16).slice(2);\nreturn [docs.map(function (d) {\n    return { payload: { _id: d._id, _rev: d._rev }, lote: lote, total: docs.length };\n}), null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 1220,
+        "wires": [
+            [
+                "7589c11fca3fa485"
+            ],
+            [
+                "d166682b6fb64739"
+            ]
+        ]
+    },
+    {
+        "id": "7589c11fca3fa485",
+        "type": "delay",
+        "z": "ff3f71c0b29878ed",
+        "name": "4 por segundo (plano Lite)",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "4",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1180,
+        "y": 1220,
+        "wires": [
+            [
+                "1a2e81785e45cbb2"
+            ]
+        ]
+    },
+    {
+        "id": "1a2e81785e45cbb2",
+        "type": "cloudantplus out",
+        "z": "ff3f71c0b29878ed",
+        "name": "Apaga os exemplos",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "payonly": true,
+        "operation": "delete",
+        "x": 1420,
+        "y": 1220,
+        "wires": [
+            [
+                "0c7416b48fe0dac7"
+            ]
+        ]
+    },
+    {
+        "id": "0c7416b48fe0dac7",
+        "type": "function",
+        "z": "ff3f71c0b29878ed",
+        "name": "Resume",
+        "func": "// ===================================================================== limpar-fim\nconst chave = 'lote:' + msg.lote;\nconst feitos = (context.get(chave) || 0) + 1;\nif (feitos < msg.total) {\n    context.set(chave, feitos);\n    return null;\n}\ncontext.set(chave, undefined);\nnode.status({ fill: 'grey', shape: 'ring', text: 'exemplos removidos' });\nmsg.payload = 'Publicações de exemplo removidas: ' + msg.total + '. Com o banco sem nenhuma publicação, elas voltam no próximo Deploy.';\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1660,
+        "y": 1220,
+        "wires": [
+            [
+                "d166682b6fb64739"
+            ]
+        ]
+    },
+    {
+        "id": "a01ca74947f059cb",
+        "type": "cloudantplus in",
+        "z": "ff3f71c0b29878ed",
+        "name": "Busca o usuário",
+        "cloudant": "5ac37d22a9baf72b",
+        "database": "hub-academico-10",
+        "service": "_ext_",
+        "search": "_query_",
+        "design": "",
+        "index": "",
+        "x": 640,
+        "y": 240,
+        "wires": [
+            [
+                "eda8a6d0d93057bb"
+            ]
+        ]
+    },
+    {
+        "id": "5ac37d22a9baf72b",
+        "type": "cloudantplus",
+        "host": "https://f1c0dcf9-5075-4061-a1f8-2f4ca596058a-bluemix.cloudantnosqldb.appdomain.cloud",
+        "name": "",
+        "useapikey": true
+    }
+]
