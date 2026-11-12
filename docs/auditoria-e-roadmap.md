@@ -1,6 +1,6 @@
 # Auditoria geral e roadmap de evolução
 
-> **Base da análise:** branch `main), revisada em 12/11/2026.  
+> **Base da análise:** branch `main`, revisada em 12/11/2026.  
 > **Natureza:** auditoria estática do código e da documentação versionados. Este documento registra constatações verificadas e recomendações; não significa que as melhorias propostas já estejam implementadas.
 
 ## Objetivo
