@@ -13,7 +13,6 @@ Desenvolvido no **HackaTruck MakerSpace** (Instituto de Pesquisas Eldorado), Dep
 
 > Prancha completa com o design system: [`docs/visao-geral-design-system.png`](docs/visao-geral-design-system.png)
 
-
 ---
 
 ## Demonstração do projeto
@@ -40,7 +39,6 @@ Assista ao vídeo curto de demonstração do Hub Acadêmico:
    - **Compartilhado pela turma:** configure o Node-RED com o Cloudant e informe o endereço do computador/servidor nos Ajustes do iPhone, conforme a seção [Ligar ao servidor Node-RED](#ligar-ao-servidor-node-red).
 
 > **Atenção:** publique provas somente com autorização do(a) professor(a) responsável pela disciplina.
-
 
 ---
 
