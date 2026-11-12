@@ -29,6 +29,12 @@ Assista ao vídeo curto de demonstração do Hub Acadêmico:
 
 ---
 
+## Planejamento e evolução
+
+Consulte a [auditoria geral e o roadmap de melhorias](docs/auditoria-e-roadmap.md), que reúne recomendações de segurança, arquitetura, confiabilidade, experiência de uso e contribuição.
+
+---
+
 ## Guia rápido: como usar o aplicativo
 
 1. **Comece pela tela Início.** Escolha **Projetos**, **Trabalhos acadêmicos**, **Banco de provas** ou **Material complementar** para abrir a lista daquele tipo. O cartão **Publique o seu projeto** abre o formulário de publicação.
