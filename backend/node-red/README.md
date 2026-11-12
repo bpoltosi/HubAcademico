@@ -10,12 +10,13 @@ O app iOS usa essas rotas para listar, publicar e avaliar. Elas também servem p
 
 | Arquivo | O que é |
 |---|---|
-| `hub-academico-flows.json` | Fluxo para importar no Node-RED |
-| `cloudant-config.json` | Só o nó de configuração do Cloudant, para um Node-RED que ainda não o tem (sem a API key) |
+| `NodeRed-Flow-Final.json` | Export completo para importar no Node-RED; inclui o nó de configuração do Cloudant, mas não a API key |
+| `hub-academico-flows.json` | Fluxo gerado por `montar-fluxo.js`, sem o nó de configuração do Cloudant |
+| `cloudant-config.json` | Nó de configuração do Cloudant para usar junto ao fluxo gerado, sem a API key |
 | `src/comum.js` | Funções comuns: validação, formato das respostas, lista de subáreas do CNPq |
 | `src/exemplos.js` | As 12 publicações de exemplo (as mesmas do app) |
 | `src/rotas/*.js` | O código de cada nó **function** |
-| `montar-fluxo.js` | Monta os dois arquivos `.json` a partir de `src/` |
+| `montar-fluxo.js` | Monta `hub-academico-flows.json` e `cloudant-config.json` a partir de `src/` |
 | `testes/testar-fluxo.js` | 48 testes que rodam o fluxo com um Cloudant simulado |
 
 ---
@@ -24,21 +25,17 @@ O app iOS usa essas rotas para listar, publicar e avaliar. Elas também servem p
 
 ### 1. Node-RED com os nós do Cloudant
 
-O fluxo usa só nós do núcleo do Node-RED e os nós **cloudantplus**, os mesmos do fluxo da equipe. Se a paleta ainda não tiver os nós cloudantplus, instale-os em ☰ › **Manage palette** › **Install** › `node-red-contrib-cloudantplus`.
+O fluxo usa os nós do núcleo do Node-RED e o pacote **cloudantplus**, o mesmo usado no fluxo da equipe. Se a paleta ainda não tiver esses nós, instale-os em ☰ › **Manage palette** › **Install** › `node-red-contrib-cloudantplus`.
 
-### 2. Importar o fluxo
+### 2. Importar o flow pronto
 
-1. No editor (http://localhost:1880), abra ☰ › **Import** e escolha `hub-academico-flows.json`.
-2. Clique em **Import** e depois em **Deploy**.
-3. Vai aparecer a aba **Hub Acadêmico – Cloudant**. Na barra de depuração (🐞) deve surgir a mensagem *“Cloudant conectado: …”*.
-4. Se o banco não tiver nenhuma publicação, as 12 publicações de exemplo são criadas em seguida, em uns 3 segundos.
+1. No computador que executa o Node-RED, abra o editor em `http://localhost:1880`.
+2. Baixe [`NodeRed-Flow-Final.json`](NodeRed-Flow-Final.json) do repositório. No editor, abra ☰ › **Import** › **select a file to import**, escolha o JSON e confirme a importação.
+3. O arquivo já inclui o nó de configuração `cloudantplus` usado pelas rotas. Abra ☰ › **Configuration nodes** › `cloudantplus` e informe a **API key** em IBM Cloud › Resource list › Cloudant › **Service credentials** › `apikey`. A chave não está dentro do JSON.
+4. Clique em **Update** e em **Deploy**. Deve aparecer a aba **Hub Acadêmico – Cloudant**; na barra de depuração (🐞), procure *“Cloudant conectado: …”*.
+5. Se o banco não tiver nenhuma publicação, as 12 publicações de exemplo são criadas automaticamente.
 
-Se os nós do Cloudant aparecerem com um **triângulo vermelho**, este Node-RED não tem a configuração do Cloudant da equipe (é o caso de outro computador):
-
-1. Importe também `cloudant-config.json`.
-2. Abra ☰ › **Configuration nodes** › **cloudantplus**.
-3. Cole a **API key**: IBM Cloud › Resource list › Cloudant › **Service credentials** › `apikey`.
-4. Clique em **Update** e em **Deploy**.
+**Alternativa para desenvolvimento:** `hub-academico-flows.json` é o fluxo gerado a partir dos arquivos em `src/` e não inclui o nó de configuração do Cloudant. Se importar esse arquivo, importe também `cloudant-config.json` e configure a API key no nó `cloudantplus`.
 
 **Fluxos antigos:** a versão anterior do Hub Acadêmico (rotas `/hub/...`, dados no contexto do Node-RED) pode ser apagada. As publicações gravadas nela não passam sozinhas para o Cloudant. O fluxo de rascunho da equipe (`GETprojetos`…) também pode ficar ou sair: as rotas não se misturam.
 
@@ -57,7 +54,7 @@ O link do servidor fica nos **Ajustes do iPhone**: **Ajustes › Apps › Hub Ac
 | Onde o app roda | Link do servidor |
 |---|---|
 | Simulador do Xcode, no mesmo Mac | `localhost:1880` |
-| iPhone na mesma rede Wi-Fi | `IP-DO-MAC:1880` (veja o IP com `ipconfig getifaddr en0`) |
+| iPhone na mesma rede Wi-Fi | `IP-DO-COMPUTADOR:1880` (descubra o IP atual na rede local) |
 | Node-RED na nuvem | `https://seu-node-red` |
 
 Para que todos os aparelhos da turma já abram ligados ao servidor, preencha a chave **`HubServidorLink`** em `Config/HubAcademico-Info.plist` antes de compilar. Na primeira abertura, ela é copiada para o campo dos Ajustes.

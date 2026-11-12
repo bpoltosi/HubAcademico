@@ -191,17 +191,23 @@ O script usa só a biblioteca padrão do Python 3 e, com o Node.js instalado, ta
 
 ## Banco de dados: Node-RED e Cloudant
 
-A pasta [`backend/node-red`](backend/node-red) tem o fluxo pronto para importar, no mesmo formato do fluxo da equipe: cada rota é **http in → function → cloudantplus → http response**, com nomes no padrão **GET/POST/UPDATE/DELETE + nome** (`GETpublicacoes`, `POSTpublicacao`, `POSTavaliacao`, `POSTusuario`…). Os dados ficam no banco **`hub-academico-10` do Cloudant**, o mesmo do fluxo da equipe. Em poucas palavras:
+A pasta [`backend/node-red`](backend/node-red) contém o fluxo da API do Hub Acadêmico. Para instalar a versão completa, importe o arquivo [`NodeRed-Flow-Final.json`](backend/node-red/NodeRed-Flow-Final.json) no Node-RED. Ele contém as rotas **GET/POST/UPDATE/DELETE**, os nós **cloudantplus** e a configuração do banco **`hub-academico-10`** do Cloudant.
 
-1. No Node-RED, confira se a paleta tem os nós **cloudantplus** (☰ › Manage palette › `node-red-contrib-cloudantplus`).
-2. Use ☰ › **Import** › `backend/node-red/hub-academico-flows.json` e clique em **Deploy**.
-3. Se os nós do Cloudant ficarem com um triângulo vermelho, este Node-RED ainda não tem a configuração da equipe: importe também `backend/node-red/cloudant-config.json`, abra o nó de configuração do Cloudant, cole a **API key** e faça Deploy de novo.
-4. Na aba de depuração (🐞) deve aparecer *“Cloudant conectado…”*. Com o banco vazio, as 12 publicações de exemplo são criadas sozinhas.
-5. No iPhone ou simulador: **Ajustes › Apps › Hub Acadêmico › Link do servidor** › `localhost:1880` (simulador) ou `IP-DO-MAC:1880` (iPhone). Volte ao app.
+### Criar o flow no Node-RED
 
-**Já usava a versão anterior?** Ela respondia em `/hub/...` e guardava os dados no contexto do Node-RED. Atualize o app e o fluxo juntos, e apague a aba antiga. As publicações gravadas na versão anterior não passam sozinhas para o Cloudant.
+1. **Abra o Node-RED** no computador que vai funcionar como servidor. No próprio computador, acesse `http://localhost:1880`.
+2. **Instale o nó Cloudant, se necessário.** No menu ☰, entre em **Manage palette › Install**, procure por `node-red-contrib-cloudantplus` e instale.
+3. **Importe o JSON do projeto.** Baixe o arquivo [`backend/node-red/NodeRed-Flow-Final.json`](backend/node-red/NodeRed-Flow-Final.json) para o computador. No editor do Node-RED, abra ☰ › **Import** › **select a file to import**, escolha esse arquivo e confirme a importação como um novo flow.
+4. **Configure a credencial do Cloudant.** O JSON já inclui o nó de configuração `cloudantplus` e o endereço do serviço da equipe, mas **não contém a API key**. Abra ☰ › **Configuration nodes** › **cloudantplus**, informe a API key em **IBM Cloud › Resource list › Cloudant › Service credentials › apikey**, clique em **Update** e depois em **Deploy**. Não é necessário importar `cloudant-config.json` separadamente quando você usa `NodeRed-Flow-Final.json`.
+5. **Confira a conexão.** Na barra de depuração (🐞), procure a mensagem *“Cloudant conectado…”*. Quando o banco estiver sem publicações, o flow cria automaticamente as 12 publicações fictícias de exemplo.
+6. **Teste a API.** No navegador do computador que executa o Node-RED, abra [`http://localhost:1880/GETstatus`](http://localhost:1880/GETstatus). A resposta deve trazer `"ok": true` e os totais do banco.
+7. **Conecte o aplicativo.** Nos Ajustes do iPhone, abra **Apps › Hub Acadêmico › Link do servidor** e informe `localhost:1880` para o simulador no mesmo Mac ou o IP atual do computador seguido de `:1880` para um iPhone físico na mesma rede. Veja [Ligar ao servidor Node-RED](#ligar-ao-servidor-node-red) para descobrir o IP correto.
 
-O passo a passo completo, os documentos do banco, as rotas com exemplos em `curl`, a moderação e os testes estão em [`backend/node-red/README.md`](backend/node-red/README.md).
+> **Importante:** a API key é configurada dentro do Node-RED e não deve ser adicionada ao JSON nem enviada ao GitHub. Não publique o arquivo local de credenciais `flows_cred.json`.
+
+**Já usava a versão anterior?** Ela respondia em `/hub/...` e guardava os dados no contexto do Node-RED. Atualize o app e o flow juntos, e apague a aba antiga. As publicações gravadas na versão anterior não passam sozinhas para o Cloudant.
+
+O manual técnico com os documentos do banco, as rotas e exemplos em `curl`, a moderação e os testes está em [`backend/node-red/README.md`](backend/node-red/README.md).
 
 ---
 
