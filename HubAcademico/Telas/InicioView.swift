@@ -3,9 +3,9 @@ import SwiftUI
 /// Para onde um atalho do Início leva.
 enum DestinoAtalho {
     /// Abre a Tela 2 (Busca) já filtrada por um tipo.
-    case listar(TipoProducao)
-    /// Abre a Tela 4 (Cadastro).
-    case cadastrar(TipoProducao)
+    case listar(TipoPublicacao)
+    /// Abre a Tela 4 (Publicar).
+    case publicar(TipoPublicacao)
 }
 
 /// Atalho da tela inicial (equivale aos ícones da faixa “Utilidades” do site, na vertical).
@@ -20,20 +20,20 @@ struct AtalhoInicio: Identifiable {
 
     static let todos: [AtalhoInicio] = [
         AtalhoInicio(titulo: "Projetos", subtitulo: "Pesquisa, extensão e inovação",
-                     simbolo: TipoProducao.projeto.simbolo, destino: .listar(.projeto)),
+                     simbolo: TipoPublicacao.projeto.simbolo, destino: .listar(.projeto)),
         AtalhoInicio(titulo: "Trabalhos acadêmicos", subtitulo: "TCCs, artigos e relatórios",
-                     simbolo: TipoProducao.trabalho.simbolo, destino: .listar(.trabalho)),
-        AtalhoInicio(titulo: "Banco de provas", subtitulo: "Provas anteriores por matéria",
-                     simbolo: TipoProducao.prova.simbolo, destino: .listar(.prova)),
+                     simbolo: TipoPublicacao.trabalho.simbolo, destino: .listar(.trabalho)),
+        AtalhoInicio(titulo: "Banco de provas", subtitulo: "Provas anteriores por disciplina",
+                     simbolo: TipoPublicacao.prova.simbolo, destino: .listar(.prova)),
         AtalhoInicio(titulo: "Material complementar", subtitulo: "Apostilas, vídeos e links",
-                     simbolo: TipoProducao.material.simbolo, destino: .listar(.material)),
-        AtalhoInicio(titulo: "Cadastre o seu projeto", subtitulo: "Compartilhe a sua produção",
-                     simbolo: "plus.circle.fill", destino: .cadastrar(.projeto), destaque: true),
+                     simbolo: TipoPublicacao.material.simbolo, destino: .listar(.material)),
+        AtalhoInicio(titulo: "Publique o seu projeto", subtitulo: "Projeto, trabalho ou prova",
+                     simbolo: "plus.circle.fill", destino: .publicar(.projeto), destaque: true),
     ]
 
-    /// Regra do projeto: ordem crescente de caracteres
+    /// Regra do app: ordem crescente de caracteres
     /// (Projetos 8, Banco de provas 15, Trabalhos acadêmicos 20,
-    /// Material complementar 21, Cadastre o seu projeto 22).
+    /// Material complementar 21, Publique o seu projeto 22).
     static var ordenados: [AtalhoInicio] {
         todos.sorted { ($0.titulo.count, $0.titulo) < ($1.titulo.count, $1.titulo) }
     }
@@ -43,7 +43,7 @@ struct AtalhoInicio: Identifiable {
 struct InicioView: View {
     @Environment(Router.self) private var router
     @Environment(BuscaModel.self) private var busca
-    @AppStorage("perfil.nome") private var nomePerfil = ""
+    @AppStorage("usuario.nome") private var nomeUsuario = ""
 
     var body: some View {
         ScrollView {
@@ -51,7 +51,7 @@ struct InicioView: View {
                 Text(saudacao)
                     .font(Tipografia.fonte(25, .medium, relativoA: .largeTitle))
                     .foregroundStyle(UFSM.azul)
-                Text("Explore e compartilhe a produção acadêmica do CTISM.")
+                Text("Explore e compartilhe os seus trabalhos e projetos acadêmicos.")
                     .font(Tipografia.fonte(14, relativoA: .subheadline))
                     .foregroundStyle(UFSM.texto2)
                     .padding(.top, 6)
@@ -87,13 +87,13 @@ struct InicioView: View {
             busca.texto = ""
             busca.mostrarFiltros = false
             router.abrirBusca(focar: false)
-        case .cadastrar(let tipo):
-            router.abrir(.cadastro(tipo))
+        case .publicar(let tipo):
+            router.abrir(.publicar(tipo))
         }
     }
 
     private var saudacao: String {
-        let primeiroNome = nomePerfil.aparado.split(separator: " ").first.map(String.init)
+        let primeiroNome = nomeUsuario.aparado.split(separator: " ").first.map(String.init)
         return "Olá, \(primeiroNome ?? "estudante")!"
     }
 }

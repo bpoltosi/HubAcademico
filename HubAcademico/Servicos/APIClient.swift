@@ -9,125 +9,125 @@ enum ErroAPI: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .semConexao(let detalhe):
-            return "Não foi possível falar com o servidor. \(detalhe)"
+        case .semConexao(let motivo):
+            return "Não foi possível falar com o servidor. \(motivo)"
         case .servidor(_, let mensagem):
             return mensagem
         case .usuarioNaoIdentificado:
-            return "O servidor não reconheceu o seu perfil. No cadastro, toque no cartão “Publicando como…” e depois em Concluir."
+            return "O servidor não reconheceu o seu usuário. Na tela Publicar, toque no cartão “Publicando como…” e depois em Concluir."
         case .respostaInvalida:
             return "O servidor respondeu em um formato inesperado. Confira se o fluxo do Hub Acadêmico está implantado no Node-RED."
         }
     }
 }
 
-// MARK: - Formatos da API (veja backend/node-red/README.md)
+// MARK: - Formatos da API (veja backend/node-red/README.md; banco no Cloudant)
 
-/// Projeto como vem do Node-RED. A coluna "cadeira" do banco é a "matéria" do app.
-struct ProjetoDTO: Decodable {
+/// Publicação como vem do Node-RED.
+struct PublicacaoDTO: Decodable {
     let id: String
     let tipo: String
     let titulo: String
     let descricao: String
-    let imagemURL: String?
+    let imagemLink: String?
     let link: String?
     let plataforma: String?
     let area: String
     let subarea: String?
-    let cadeira: String?
+    let disciplina: String?
     let curso: String?
     let instituicao: String?
     let ano: Int
     let autores: [String]?
-    let nota: Double?
-    let quant: Int?
+    let media: Double?
+    let totalAvaliacoes: Int?
     let minhaNota: Int?
     let meu: Bool?
     let criadoEm: Date?
 
     /// Converte para o modelo do app; devolve `nil` se o tipo, a área ou o id não forem reconhecidos.
-    var producao: Producao? {
+    var publicacao: Publicacao? {
         guard let uuid = UUID(uuidString: id),
-              let tipoProducao = TipoProducao(rawValue: tipo),
+              let tipoPublicacao = TipoPublicacao(rawValue: tipo),
               let areaConhecimento = AreaConhecimento(rawValue: area) else {
             return nil
         }
-        return Producao(
+        return Publicacao(
             id: uuid,
-            tipo: tipoProducao,
+            tipo: tipoPublicacao,
             titulo: titulo,
             descricao: descricao,
-            imagemURL: imagemURL.flatMap { URL(string: $0) },
+            imagemLink: imagemLink.flatMap { URL(string: $0) },
             link: link.flatMap { URL(string: $0) },
             plataforma: plataforma.flatMap { Plataforma(rawValue: $0) } ?? .outro,
             area: areaConhecimento,
             subarea: subarea,
-            materia: cadeira ?? "",
+            disciplina: disciplina ?? "",
             curso: curso ?? "",
             instituicao: instituicao ?? "",
             ano: ano,
             autores: autores ?? [],
             notas: [],
             criadoEm: criadoEm ?? .now,
-            notaMedia: nota ?? 0,
-            quantidadeAvaliacoes: quant ?? 0
+            media: media ?? 0,
+            totalAvaliacoes: totalAvaliacoes ?? 0
         )
     }
 }
 
-/// Corpo do POST /hub/projetos.
-struct NovoProjetoDTO: Encodable {
+/// Corpo do POST /POSTpublicacao.
+struct NovaPublicacaoDTO: Encodable {
     let tipo: String
     let titulo: String
     let descricao: String
-    let imagemURL: String?
+    let imagemLink: String?
     let link: String?
     let plataforma: String
     let area: String
     let subarea: String?
-    let cadeira: String
+    let disciplina: String
     let curso: String
     let instituicao: String
     let ano: Int
     let autores: [String]
 
-    init(_ producao: Producao) {
-        tipo = producao.tipo.rawValue
-        titulo = producao.titulo
-        descricao = producao.descricao
-        imagemURL = producao.imagemURL?.absoluteString
-        link = producao.link?.absoluteString
-        plataforma = producao.plataforma.rawValue
-        area = producao.area.rawValue
-        subarea = producao.subarea
-        cadeira = producao.materia
-        curso = producao.curso
-        instituicao = producao.instituicao
-        ano = producao.ano
-        autores = producao.autores
+    init(_ publicacao: Publicacao) {
+        tipo = publicacao.tipo.rawValue
+        titulo = publicacao.titulo
+        descricao = publicacao.descricao
+        imagemLink = publicacao.imagemLink?.absoluteString
+        link = publicacao.link?.absoluteString
+        plataforma = publicacao.plataforma.rawValue
+        area = publicacao.area.rawValue
+        subarea = publicacao.subarea
+        disciplina = publicacao.disciplina
+        curso = publicacao.curso
+        instituicao = publicacao.instituicao
+        ano = publicacao.ano
+        autores = publicacao.autores
     }
 }
 
-/// Resposta do POST /hub/avaliacoes.
-struct ResumoAvaliacaoDTO: Decodable {
-    let projetoId: String
-    let nota: Double
-    let quant: Int
+/// Resposta do POST /POSTavaliacao.
+struct ResultadoAvaliacaoDTO: Decodable {
+    let publicacaoId: String
+    let media: Double
+    let totalAvaliacoes: Int
     let minhaNota: Int?
 }
 
-/// Usuário (tabela users). O `id` identifica este aparelho no servidor.
+/// Usuário (coleção "usuario" no Cloudant). O `id` identifica este aparelho no servidor.
 struct UsuarioDTO: Decodable {
     let id: String
     let nome: String
     let curso: String?
 }
 
-/// Resposta do GET /hub/status.
+/// Resposta do GET /GETstatus.
 struct StatusDTO: Decodable {
     struct Totais: Decodable {
-        let projetos: Int
-        let users: Int
+        let publicacoes: Int
+        let usuarios: Int
         let avaliacoes: Int
     }
 
@@ -140,47 +140,48 @@ private struct ErroDTO: Decodable {
     let detalhes: [String]?
 }
 
-private struct NotaDTO: Encodable {
-    let projetoId: String
+private struct NovaAvaliacaoDTO: Encodable {
+    let publicacaoId: String
     let nota: Int
 }
 
-private struct PerfilDTO: Encodable {
+private struct DadosUsuarioDTO: Encodable {
     let nome: String
     let curso: String
 }
 
 // MARK: - Cliente
 
-/// Cliente da API REST do Hub Acadêmico no Node-RED.
+/// Cliente da API REST do Hub Acadêmico no Node-RED (banco no Cloudant).
+/// As rotas seguem o padrão do fluxo da equipe: método + nome (GETpublicacoes, POSTpublicacao…).
 struct APIClient {
-    /// Endereço do Node-RED, ex.: http://192.168.0.10:1880 (as rotas ficam em /hub/...).
-    let base: URL
-    /// Id do usuário, enviado no cabeçalho `X-Hub-User`.
+    /// Link do Node-RED, ex.: http://192.168.0.10:1880 (as rotas ficam na raiz: /GETpublicacoes…).
+    let servidorLink: URL
+    /// Id do usuário, enviado no cabeçalho `X-Hub-Usuario`.
     var usuarioID: String?
 
     func status() async throws -> StatusDTO {
-        try await enviar("GET", "hub/status")
+        try await enviar("GET", "GETstatus")
     }
 
-    func projetos() async throws -> [ProjetoDTO] {
-        try await enviar("GET", "hub/projetos")
+    func publicacoes() async throws -> [PublicacaoDTO] {
+        try await enviar("GET", "GETpublicacoes")
     }
 
-    func publicar(_ novo: NovoProjetoDTO) async throws -> ProjetoDTO {
-        try await enviar("POST", "hub/projetos", corpo: novo)
+    func publicar(_ novo: NovaPublicacaoDTO) async throws -> PublicacaoDTO {
+        try await enviar("POST", "POSTpublicacao", corpo: novo)
     }
 
-    func avaliar(projetoID: UUID, nota: Int) async throws -> ResumoAvaliacaoDTO {
-        try await enviar("POST", "hub/avaliacoes", corpo: NotaDTO(projetoId: projetoID.uuidString, nota: nota))
+    func avaliar(publicacaoID: UUID, nota: Int) async throws -> ResultadoAvaliacaoDTO {
+        try await enviar("POST", "POSTavaliacao", corpo: NovaAvaliacaoDTO(publicacaoId: publicacaoID.uuidString, nota: nota))
     }
 
     func cadastrarUsuario(nome: String, curso: String) async throws -> UsuarioDTO {
-        try await enviar("POST", "hub/users", corpo: PerfilDTO(nome: nome, curso: curso))
+        try await enviar("POST", "POSTusuario", corpo: DadosUsuarioDTO(nome: nome, curso: curso))
     }
 
-    func atualizarPerfil(nome: String, curso: String) async throws -> UsuarioDTO {
-        try await enviar("PUT", "hub/perfil", corpo: PerfilDTO(nome: nome, curso: curso))
+    func atualizarUsuario(nome: String, curso: String) async throws -> UsuarioDTO {
+        try await enviar("PUT", "UPDATEusuario", corpo: DadosUsuarioDTO(nome: nome, curso: curso))
     }
 
     // MARK: Requisição
@@ -211,11 +212,11 @@ struct APIClient {
         _ caminho: String,
         corpo: (any Encodable)? = nil
     ) async throws -> Resposta {
-        var pedido = URLRequest(url: base.appending(path: caminho))
+        var pedido = URLRequest(url: servidorLink.appending(path: caminho))
         pedido.httpMethod = metodo
         pedido.setValue("application/json", forHTTPHeaderField: "Accept")
         if let usuarioID {
-            pedido.setValue(usuarioID, forHTTPHeaderField: "X-Hub-User")
+            pedido.setValue(usuarioID, forHTTPHeaderField: "X-Hub-Usuario")
         }
         if let corpo {
             pedido.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
@@ -232,7 +233,7 @@ struct APIClient {
             }
             let erro = try? JSONDecoder().decode(ErroDTO.self, from: dados)
             let padrao = http.statusCode == 404
-                ? "Rota não encontrada (404). Confira se o fluxo do Hub Acadêmico foi importado e implantado no Node-RED."
+                ? "Rota não encontrada (404). Confira se o fluxo do Hub Acadêmico (Cloudant) foi importado e implantado no Node-RED."
                 : "O servidor respondeu com o erro \(http.statusCode)."
             var mensagem = erro?.erro ?? padrao
             if let detalhes = erro?.detalhes, !detalhes.isEmpty {
@@ -266,9 +267,9 @@ struct APIClient {
         case .timedOut:
             return "O servidor demorou para responder."
         case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
-            return "Confira o endereço e se o Node-RED está ligado na mesma rede."
+            return "Confira o link do servidor e se o Node-RED está ligado na mesma rede."
         case .appTransportSecurityRequiresSecureConnection:
-            return "O iOS bloqueou o endereço http://. Veja a configuração do Info.plist no README."
+            return "O iOS bloqueou o link http://. Veja a configuração do Info.plist no README."
         case .secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate,
              .serverCertificateNotYetValid, .serverCertificateHasUnknownRoot:
             return "Falhou a conexão segura (HTTPS) com o servidor."

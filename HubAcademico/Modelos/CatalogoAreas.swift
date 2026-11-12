@@ -1,8 +1,8 @@
 import Foundation
 
-// Gerado por ferramentas/catalogo/gerar_catalogo.py a partir da tabela do CNPq
-// e dos currículos da UFSM. Não edite à mão: ajuste os dados e rode-o de novo.
-// Só entram subáreas com ao menos uma disciplina no catálogo atual da UFSM.
+// Gerado por ferramentas/catalogo/gerar_catalogo.py a partir da tabela de áreas do conhecimento
+// do CNPq enviada pela equipe. Não edite à mão: ajuste o script e rode-o de novo.
+// As mesmas listas estão em backend/node-red/src/comum.js (validação da subárea).
 
 extension AreaConhecimento {
     /// Grandes áreas na ordem da tabela do CNPq (a mesma da lista enviada).
@@ -22,7 +22,7 @@ extension AreaConhecimento {
         }
     }
 
-    /// Subáreas com disciplinas no catálogo da UFSM, na ordem da tabela do CNPq.
+    /// Subáreas da grande área, na ordem da tabela.
     /// "Agronomia/Ciência do Solo" indica a subárea Ciência do Solo dentro de Agronomia.
     var subareas: [String] {
         switch self {
@@ -106,6 +106,7 @@ extension AreaConhecimento {
                 "Educação/Planejamento e Avaliação Educacional",
                 "Educação/Ensino-Aprendizagem",
                 "Educação/Currículo",
+                "Educação/Orientação e Aconselhamento",
                 "Educação/Tópicos Especiais em Educação",
                 "Filosofia",
                 "Geografia",
@@ -139,6 +140,7 @@ extension AreaConhecimento {
                 "Engenharia de Transportes",
                 "Engenharia Elétrica",
                 "Engenharia Mecânica",
+                "Engenharia Naval e Oceânica",
                 "Engenharia Nuclear",
                 "Engenharia Química",
                 "Engenharia Sanitária",

@@ -26,25 +26,25 @@ extension String {
 }
 
 extension Double {
-    /// Nota com uma casa decimal e vírgula (ex.: 4,8).
-    var notaFormatada: String {
+    /// Média com uma casa decimal e vírgula (ex.: 4,8).
+    var mediaFormatada: String {
         formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "pt_BR")))
     }
 }
 
 extension URL {
-    /// Converte o texto digitado em um endereço web válido (acrescenta https:// se faltar).
+    /// Converte o texto digitado em um link válido (acrescenta https:// se faltar).
     static func web(_ texto: String) -> URL? {
         let limpo = texto.aparado
         guard !limpo.isEmpty, !limpo.contains(" ") else { return nil }
         let minusculo = limpo.lowercased()
         let completo = (minusculo.hasPrefix("http://") || minusculo.hasPrefix("https://")) ? limpo : "https://" + limpo
-        guard let url = URL(string: completo),
-              let host = url.host(),
+        guard let link = URL(string: completo),
+              let host = link.host(),
               host.contains("."),
               !host.hasSuffix(".") else {
             return nil
         }
-        return url
+        return link
     }
 }

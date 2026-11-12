@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Perfil (nome e curso), usado como autoria no cadastro. Abre pelo cartão "Publicando como…"
-/// da tela de cadastro. Com o Node-RED, vira um registro da tabela users.
+/// Meu perfil: nome e curso do usuário, usados como autoria. Abre pelo cartão "Publicando como…"
+/// da tela Publicar. Com o Node-RED, vira um documento da coleção "usuario" no Cloudant.
 /// No futuro será preenchido pelo login da UFSM/CTISM.
 struct PerfilView: View {
     @Environment(\.dismiss) private var fechar
-    @Environment(ProducaoStore.self) private var store
-    @AppStorage("perfil.nome") private var nome = ""
-    @AppStorage("perfil.curso") private var curso = ""
+    @Environment(PublicacaoStore.self) private var store
+    @AppStorage("usuario.nome") private var nome = ""
+    @AppStorage("usuario.curso") private var curso = ""
 
     var body: some View {
         Form {
@@ -47,8 +47,8 @@ struct PerfilView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Concluir") {
-                    // Com o Node-RED, cadastra ou atualiza o usuário (tabela users) em segundo plano.
-                    Task { await store.registrarPerfil() }
+                    // Com o Node-RED, cadastra ou atualiza o usuário no Cloudant em segundo plano.
+                    Task { await store.registrarUsuario() }
                     fechar()
                 }
             }
@@ -60,5 +60,5 @@ struct PerfilView: View {
     NavigationStack {
         PerfilView()
     }
-    .environment(ProducaoStore.previa)
+    .environment(PublicacaoStore.previa)
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Subáreas da área escolhida, abertas dentro do campo Subárea do cadastro.
+/// Subáreas da área escolhida, abertas dentro do campo Subárea da tela Publicar.
 /// As da mesma família ("Agronomia/…", "Medicina/…") ficam juntas, sob o nome da família.
 struct ListaSubareas: View {
     let area: AreaConhecimento

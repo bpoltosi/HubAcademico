@@ -1,27 +1,27 @@
 import Foundation
 
-/// Endereço do servidor Node-RED.
+/// Link do servidor Node-RED.
 ///
-/// Fica nos **Ajustes do iPhone › Hub Acadêmico › Endereço** (`Settings.bundle`), fora do app,
+/// Fica nos **Ajustes do iPhone › Hub Acadêmico › Link do servidor** (`Settings.bundle`), fora do app,
 /// já que o ☰ do cabeçalho agora só volta ao Início. Com o campo vazio, o app usa só os dados
 /// guardados no aparelho (modo demonstração).
 ///
-/// O endereço padrão da turma pode vir do Info.plist (`HubServidorURL`): ele é copiado para o
+/// O link padrão da turma pode vir do Info.plist (`HubServidorLink`): ele é copiado para o
 /// campo dos Ajustes na primeira abertura (e de novo se mudar no Info.plist), a não ser que a
-/// pessoa já tenha escrito outro endereço lá. Assim, o que aparece nos Ajustes é o que o app usa.
+/// pessoa já tenha escrito outro link lá. Assim, o que aparece nos Ajustes é o que o app usa.
 enum ServidorConfig {
     /// Mesma chave do campo de texto em `Settings.bundle/Root.plist`.
-    static let chave = "servidor.url"
-    /// Último endereço do Info.plist copiado para os Ajustes.
+    static let chave = "servidor.link"
+    /// Último link do Info.plist copiado para os Ajustes.
     private static let chavePadraoCopiado = "servidor.padraoCopiado"
 
-    /// Endereço em uso, ou `nil` para usar só os dados do aparelho.
-    static var url: URL? {
+    /// Link em uso, ou `nil` para usar só os dados do aparelho.
+    static var link: URL? {
         normalizar(textoNosAjustes)
     }
 
-    /// Há texto no campo dos Ajustes, mas ele não forma um endereço (ex.: tem espaços).
-    static var enderecoInvalido: Bool {
+    /// Há texto no campo dos Ajustes, mas ele não forma um link (ex.: tem espaços).
+    static var linkInvalido: Bool {
         let texto = textoNosAjustes
         return !texto.aparado.isEmpty && normalizar(texto) == nil
     }
@@ -29,11 +29,11 @@ enum ServidorConfig {
     /// Texto do campo dos Ajustes (vazio = só os dados do aparelho).
     private static var textoNosAjustes: String {
         let preferencias = UserDefaults.standard
-        let daTurma = (Bundle.main.object(forInfoDictionaryKey: "HubServidorURL") as? String ?? "").aparado
+        let daTurma = (Bundle.main.object(forInfoDictionaryKey: "HubServidorLink") as? String ?? "").aparado
         let copiado = preferencias.string(forKey: chavePadraoCopiado)
         let digitado = preferencias.string(forKey: chave)
 
-        // Padrão novo no Info.plist e a pessoa não escreveu outro endereço: o campo passa a mostrá-lo.
+        // Padrão novo no Info.plist e a pessoa não escreveu outro link: o campo passa a mostrá-lo.
         if daTurma != (copiado ?? ""), digitado == nil || digitado == copiado {
             preferencias.set(daTurma, forKey: chave)
             preferencias.set(daTurma, forKey: chavePadraoCopiado)
@@ -43,7 +43,7 @@ enum ServidorConfig {
     }
 
     /// Aceita "192.168.0.10:1880", "localhost:1880" ou "https://meu-node-red.com/api".
-    /// Sem esquema, usa `http://` para endereços da rede local e `https://` para os demais.
+    /// Sem esquema, usa `http://` na rede local e `https://` nos demais casos.
     static func normalizar(_ texto: String) -> URL? {
         var limpo = texto.aparado
         guard !limpo.isEmpty, !limpo.contains(" ") else { return nil }
@@ -56,8 +56,8 @@ enum ServidorConfig {
             let semPorta = host.split(separator: ":").first.map(String.init) ?? host
             limpo = (ehRedeLocal(semPorta) ? "http://" : "https://") + limpo
         }
-        guard let url = URL(string: limpo), let host = url.host(), !host.isEmpty else { return nil }
-        return url
+        guard let link = URL(string: limpo), let host = link.host(), !host.isEmpty else { return nil }
+        return link
     }
 
     /// `localhost`, nomes `.local` e endereços IP (ex.: 192.168.0.10).

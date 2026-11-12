@@ -3,12 +3,12 @@ import SwiftUI
 /// Painel aberto pelo funil: uma caixa de seleção por filtro, na ordem crescente de caracteres.
 struct PainelFiltros: View {
     @Environment(BuscaModel.self) private var busca
-    @Environment(ProducaoStore.self) private var store
+    @Environment(PublicacaoStore.self) private var store
 
     var body: some View {
         @Bindable var busca = busca
         let ativos = busca.filtros.quantidadeAtivos
-        let resumo: String = ativos == 1 ? "· 1 ativo" : "· \(ativos) ativos"
+        let contagem: String = ativos == 1 ? "· 1 ativo" : "· \(ativos) ativos"
         let campos = CampoFiltro.ordenados
 
         VStack(spacing: 0) {
@@ -19,7 +19,7 @@ struct PainelFiltros: View {
                 Text("Filtrar por")
                     .font(Tipografia.fonte(15, .medium, relativoA: .headline))
                     .foregroundStyle(UFSM.azul)
-                Text(resumo)
+                Text(contagem)
                     .font(Tipografia.fonte(11.5, relativoA: .caption))
                     .foregroundStyle(UFSM.texto3)
                 Spacer()
@@ -148,10 +148,10 @@ struct LinhaFiltro: View {
             }
         case .titulo:
             CampoTextoCompacto(placeholder: "Palavras do título", texto: $filtros.titulo)
-        case .materia:
-            CampoTextoCompacto(placeholder: "Nome da matéria", texto: $filtros.materia)
+        case .disciplina:
+            CampoTextoCompacto(placeholder: "Nome da disciplina", texto: $filtros.disciplina)
         case .melhorAvaliacao:
-            Pilula(texto: "Maior nota", iconeInicio: "arrow.down", mostrarSeta: false)
+            Pilula(texto: "Melhor avaliação", iconeInicio: "arrow.down", mostrarSeta: false)
         }
     }
 }

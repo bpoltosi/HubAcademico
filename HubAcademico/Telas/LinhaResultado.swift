@@ -2,31 +2,31 @@ import SwiftUI
 
 /// Cartão de uma publicação nas listas e nos resultados da busca.
 struct LinhaResultado: View {
-    let producao: Producao
-    @Environment(ProducaoStore.self) private var store
+    let publicacao: Publicacao
+    @Environment(PublicacaoStore.self) private var store
 
     var body: some View {
-        let media = store.media(producao)
-        let detalhe = "(\(store.totalAvaliacoes(producao))) · \(String(producao.ano))"
+        let media = store.media(publicacao)
+        let legenda = "(\(store.totalAvaliacoes(publicacao))) · \(String(publicacao.ano))"
 
         HStack(alignment: .top, spacing: 12) {
-            CapaView(url: producao.imagemURL)
+            ImagemView(link: publicacao.imagemLink)
                 .frame(width: 74, height: 74)
                 .clipShape(RoundedRectangle(cornerRadius: Raio.campo, style: .continuous))
 
             VStack(alignment: .leading, spacing: 5) {
-                Chip(texto: producao.tipo.nome, estilo: .tipo)
-                Text(producao.titulo)
+                Chip(texto: publicacao.tipo.nome, estilo: .tipo)
+                Text(publicacao.titulo)
                     .font(Tipografia.fonte(14, .medium, relativoA: .subheadline))
                     .foregroundStyle(UFSM.azul)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 5) {
-                    Estrelas(nota: media, tamanho: 11, espaco: 1)
-                    Text(media.notaFormatada)
+                    Estrelas(media: media, tamanho: 11, espaco: 1)
+                    Text(media.mediaFormatada)
                         .font(Tipografia.fonte(11.5, .medium, relativoA: .caption))
                         .foregroundStyle(UFSM.texto)
-                    Text(detalhe)
+                    Text(legenda)
                         .font(Tipografia.fonte(11.5, relativoA: .caption))
                         .foregroundStyle(UFSM.texto3)
                         .lineLimit(1)

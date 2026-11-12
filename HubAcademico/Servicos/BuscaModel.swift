@@ -8,7 +8,7 @@ enum CampoFiltro: String, CaseIterable, Identifiable, Hashable {
     case autor
     case curso
     case titulo
-    case materia
+    case disciplina
     case melhorAvaliacao
 
     var id: String { rawValue }
@@ -20,7 +20,7 @@ enum CampoFiltro: String, CaseIterable, Identifiable, Hashable {
         case .autor: "Autor"
         case .curso: "Curso"
         case .titulo: "Título"
-        case .materia: "Matéria"
+        case .disciplina: "Disciplina"
         case .melhorAvaliacao: "Melhor avaliação"
         }
     }
@@ -33,13 +33,13 @@ enum CampoFiltro: String, CaseIterable, Identifiable, Hashable {
         case .autor: "Nome do(a) autor(a)"
         case .curso: "Todos os cursos"
         case .titulo: "Palavras do título"
-        case .materia: "Todas as matérias"
-        case .melhorAvaliacao: "Ordenar por nota"
+        case .disciplina: "Todas as disciplinas"
+        case .melhorAvaliacao: "Ordenar pela melhor avaliação"
         }
     }
 
-    /// Regra do projeto: opções em ordem crescente de caracteres
-    /// (Ano 3, Área 4, Autor 5, Curso 5, Título 6, Matéria 7, Melhor avaliação 16).
+    /// Regra do app: opções em ordem crescente de caracteres
+    /// (Ano 3, Área 4, Autor 5, Curso 5, Título 6, Disciplina 7, Melhor avaliação 16).
     /// Em caso de empate, vale a ordem alfabética.
     static var ordenados: [CampoFiltro] {
         allCases.sorted { ($0.rotulo.count, $0.rotulo) < ($1.rotulo.count, $1.rotulo) }
@@ -54,7 +54,7 @@ struct FiltrosBusca: Equatable {
     var autor = ""
     var curso = CursoCTISM.segurancaDoTrabalho
     var titulo = ""
-    var materia = ""
+    var disciplina = ""
 
     func estaAtivo(_ campo: CampoFiltro) -> Bool {
         ativos.contains(campo)
@@ -70,7 +70,7 @@ struct FiltrosBusca: Equatable {
 final class BuscaModel {
     var texto = ""
     /// Escopo da busca: um tipo (quando se entra por um atalho do Início) ou todos (`nil`).
-    var tipo: TipoProducao?
+    var tipo: TipoPublicacao?
     var mostrarFiltros = false
     var filtros = FiltrosBusca()
 

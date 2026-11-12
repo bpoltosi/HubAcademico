@@ -4,7 +4,7 @@ import SwiftUI
 /// Também é a lista de Projetos, Trabalhos, Provas e Materiais quando se entra por um atalho do Início.
 /// Tocar em um resultado abre a Tela 3 como sheet por cima desta tela.
 struct BuscaView: View {
-    @Environment(ProducaoStore.self) private var store
+    @Environment(PublicacaoStore.self) private var store
     @Environment(BuscaModel.self) private var busca
     @Environment(Router.self) private var router
 
@@ -46,18 +46,18 @@ struct BuscaView: View {
                 cabecalhoResultados(quantidade: resultados.count)
 
                 LazyVStack(spacing: 8) {
-                    ForEach(resultados) { producao in
+                    ForEach(resultados) { publicacao in
                         Button {
-                            router.abrirDetalhe(producao.id)
+                            router.abrirVisualizacao(publicacao.id)
                         } label: {
-                            LinhaResultado(producao: producao)
+                            LinhaResultado(publicacao: publicacao)
                         }
                         .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 16)
 
-                if resultados.isEmpty, store.sincronizando, store.producoes.isEmpty {
+                if resultados.isEmpty, store.sincronizando, store.publicacoes.isEmpty {
                     ProgressView("Carregando publicações…")
                         .frame(maxWidth: .infinity)
                         .padding(.top, 40)
@@ -78,14 +78,14 @@ struct BuscaView: View {
         .background(UFSM.fundo)
         .barraDePagina(busca.tipo?.tituloLista ?? "Busca")
         .toolbar {
-            if let tipo = busca.tipo, TipoProducao.cadastraveis.contains(tipo) {
+            if let tipo = busca.tipo, TipoPublicacao.publicaveis.contains(tipo) {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        router.abrir(.cadastro(tipo))
+                        router.abrir(.publicar(tipo))
                     } label: {
                         Image(systemName: "plus.circle.fill")
                     }
-                    .accessibilityLabel("Cadastrar")
+                    .accessibilityLabel("Publicar")
                 }
             }
         }
@@ -137,7 +137,7 @@ struct BuscaView: View {
     NavigationStack {
         BuscaView()
     }
-    .environment(ProducaoStore.previa)
+    .environment(PublicacaoStore.previa)
     .environment(BuscaModel())
     .environment(Router())
 }

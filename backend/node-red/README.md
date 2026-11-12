@@ -1,143 +1,93 @@
-# Hub Acadêmico no Node-RED: banco de dados e API
+# Hub Acadêmico no Node-RED: API e banco no Cloudant
 
-Este fluxo transforma o Node-RED no servidor do Hub Acadêmico. Ele guarda as **4 tabelas do rascunho** (projetos, cadeiras, users e avaliações) e oferece a **API REST** que o app iOS usa para listar, publicar e avaliar.
+Este fluxo transforma o Node-RED no servidor do Hub Acadêmico. Ele segue o mesmo formato do fluxo da equipe:
 
-- **Só nós do núcleo do Node-RED:** `http in`, `function`, `http response`, `inject`, `debug` e `comment`. Não é preciso instalar nada na paleta.
-- **Banco no próprio Node-RED:** as tabelas ficam no contexto global, na chave `hub_db`, e são gravadas em arquivo (veja o passo 2).
-- **Dados de exemplo:** na primeira implantação, o fluxo cria as mesmas 12 publicações que o app traz.
-- **Áreas e subáreas:** a API confere se a subárea enviada pertence à área e possui disciplinas no catálogo atual da UFSM (classificação baseada na tabela do CNPq).
+- cada rota é **http in → function → cloudantplus → … → http response**;
+- as rotas têm o nome no padrão **GET/POST/UPDATE/DELETE + nome**, por exemplo `GETpublicacoes`, `POSTpublicacao`, `UPDATEpublicacao` e `DELETEpublicacao`;
+- os dados ficam no banco **`hub-academico-10` do Cloudant**, com a mesma configuração do Cloudant que a equipe já usa.
+
+O app iOS usa essas rotas para listar, publicar e avaliar. Elas também servem para cadastrar e atualizar o usuário.
 
 | Arquivo | O que é |
 |---|---|
 | `hub-academico-flows.json` | Fluxo para importar no Node-RED |
-| `src/api.js` | Código do nó **API** (todas as rotas) |
-| `src/seed.js` | Código do nó **Dados de exemplo** |
-| `montar-fluxo.js` | Copia `src/api.js` e `src/seed.js` para dentro do fluxo depois de uma alteração |
-| `testes/testar-fluxo.js` | 36 testes que rodam o fluxo sem o Node-RED instalado |
+| `cloudant-config.json` | Só o nó de configuração do Cloudant, para um Node-RED que ainda não o tem (sem a API key) |
+| `src/comum.js` | Funções comuns: validação, formato das respostas, lista de subáreas do CNPq |
+| `src/exemplos.js` | As 12 publicações de exemplo (as mesmas do app) |
+| `src/rotas/*.js` | O código de cada nó **function** |
+| `montar-fluxo.js` | Monta os dois arquivos `.json` a partir de `src/` |
+| `testes/testar-fluxo.js` | 48 testes que rodam o fluxo com um Cloudant simulado |
 
 ---
 
 ## Como instalar
 
-### 1. Ter o Node-RED rodando
+### 1. Node-RED com os nós do Cloudant
 
-No Mac do laboratório, com o [Node.js LTS](https://nodejs.org) instalado:
+O fluxo usa só nós do núcleo do Node-RED e os nós **cloudantplus**, os mesmos do fluxo da equipe. Se a paleta ainda não tiver os nós cloudantplus, instale-os em ☰ › **Manage palette** › **Install** › `node-red-contrib-cloudantplus`.
 
-```bash
-npm install -g --unsafe-perm node-red
-node-red
-```
+### 2. Importar o fluxo
 
-O editor abre em **http://localhost:1880**. Também funciona com Docker (`docker run -p 1880:1880 -v hub_data:/data nodered/node-red`) ou em um Node-RED na nuvem.
+1. No editor (http://localhost:1880), abra ☰ › **Import** e escolha `hub-academico-flows.json`.
+2. Clique em **Import** e depois em **Deploy**.
+3. Vai aparecer a aba **Hub Acadêmico – Cloudant**. Na barra de depuração (🐞) deve surgir a mensagem *“Cloudant conectado: …”*.
+4. Se o banco não tiver nenhuma publicação, as 12 publicações de exemplo são criadas em seguida, em uns 3 segundos.
 
-### 2. Fazer os dados sobreviverem a reinícios
+Se os nós do Cloudant aparecerem com um **triângulo vermelho**, este Node-RED não tem a configuração do Cloudant da equipe (é o caso de outro computador):
 
-Por padrão, o Node-RED guarda o contexto só na memória e **apaga tudo ao reiniciar**. Abra o arquivo `~/.node-red/settings.js` (no Docker, `/data/settings.js`), procure `contextStorage`, tire os comentários e deixe assim:
+1. Importe também `cloudant-config.json`.
+2. Abra ☰ › **Configuration nodes** › **cloudantplus**.
+3. Cole a **API key**: IBM Cloud › Resource list › Cloudant › **Service credentials** › `apikey`.
+4. Clique em **Update** e em **Deploy**.
 
-```js
-contextStorage: {
-    default: { module: "localfilesystem" }
-},
-```
+**Fluxos antigos:** a versão anterior do Hub Acadêmico (rotas `/hub/...`, dados no contexto do Node-RED) pode ser apagada. As publicações gravadas nela não passam sozinhas para o Cloudant. O fluxo de rascunho da equipe (`GETprojetos`…) também pode ficar ou sair: as rotas não se misturam.
 
-Reinicie o Node-RED. Os dados passam a ficar em `~/.node-red/context/global/global.json`. **Copiar esse arquivo é o backup do banco.**
+### 3. Testar no navegador
 
-### 3. Importar o fluxo
-
-1. No editor, abra o menu ☰ › **Import**.
-2. Clique em **select a file to import** e escolha `hub-academico-flows.json`.
-3. Clique em **Import** e depois em **Deploy**.
-
-Vai aparecer a aba **Hub Acadêmico – API e banco**. Na barra de depuração (🐞) deve surgir a mensagem *“Banco do Hub Acadêmico criado: 12 publicações, 10 cadeiras…”*.
-
-Para atualizar o fluxo depois, importe o arquivo novo e escolha **Replace** quando o Node-RED avisar que os nós já existem. Os dados não são apagados, porque ficam no contexto e não no fluxo.
-
-**Vindo da versão “CTIA”:** apague a aba antiga **CTIA – API e banco** (ela respondia em `/ctia/...`) e importe este fluxo. Os dados guardados em `ctia_db` passam sozinhos para `hub_db` no primeiro Deploy. As publicações antigas ficam sem subárea (`"subarea": null`); para recriar os exemplos já com subárea, use o botão **Restaurar exemplos**.
-
-### 4. Testar no navegador ou no Terminal
-
-Abra **http://localhost:1880/hub/status**. A resposta deve ser parecida com:
+Abra **http://localhost:1880/GETstatus**. A resposta deve ser parecida com:
 
 ```json
-{ "ok": true, "servico": "Hub Acadêmico – Repositório acadêmico do CTISM", "totais": { "projetos": 12, "cadeiras": 10, "users": 0, "avaliacoes": 232 } }
+{ "ok": true, "servico": "Hub Acadêmico", "banco": "Cloudant", "totais": { "publicacoes": 12, "disciplinas": 10, "usuarios": 0, "avaliacoes": 0 } }
 ```
 
-### 5. Ligar o app
+### 4. Ligar o app
 
-O endereço do servidor fica nos **Ajustes do iPhone**: **Ajustes › Apps › Hub Acadêmico › Endereço** (no iOS 17, **Ajustes › Hub Acadêmico**). Digite o endereço e volte ao app: a lista é atualizada na hora.
+O link do servidor fica nos **Ajustes do iPhone**: **Ajustes › Apps › Hub Acadêmico › Link do servidor**. No iOS 17, o caminho é **Ajustes › Hub Acadêmico**. Digite o link e volte ao app: a lista é atualizada na hora.
 
-| Onde o app roda | Endereço |
+| Onde o app roda | Link do servidor |
 |---|---|
 | Simulador do Xcode, no mesmo Mac | `localhost:1880` |
 | iPhone na mesma rede Wi-Fi | `IP-DO-MAC:1880` (veja o IP com `ipconfig getifaddr en0`) |
-| Node-RED na nuvem | `https://seu-endereco` |
+| Node-RED na nuvem | `https://seu-node-red` |
 
-Sem `http://`, o app usa `http` para endereços da rede local e `https` para os demais. No iPhone, aceite o pedido de acesso à **rede local**. Se o macOS perguntar, permita conexões de entrada para o `node`.
+Para que todos os aparelhos da turma já abram ligados ao servidor, preencha a chave **`HubServidorLink`** em `Config/HubAcademico-Info.plist` antes de compilar. Na primeira abertura, ela é copiada para o campo dos Ajustes.
 
-Para que todos os aparelhos da turma já abram ligados ao servidor, preencha a chave **`HubServidorURL`** em `Config/HubAcademico-Info.plist` antes de compilar: na primeira abertura, ela é copiada para o campo dos Ajustes. Com o campo vazio nos Ajustes, o app volta a usar só os dados do aparelho.
+No dia da apresentação, o computador do Node-RED **não pode hibernar** (`caffeinate -di` no Terminal) e precisa de internet para falar com o Cloudant.
 
 ---
 
-## As tabelas
+## O banco no Cloudant
 
-O rascunho foi mantido. Ganharam colunas só os campos que o app usa: tipo, subárea, curso, imagem, plataforma e data.
+Um banco só, `hub-academico-10`, como no fluxo da equipe. O campo **`colecao`** diz o que cada documento guarda:
 
-```mermaid
-erDiagram
-    USERS ||--o{ PROJETOS : publica
-    CADEIRAS ||--o{ PROJETOS : classifica
-    PROJETOS ||--o{ AVALIACOES : recebe
-    USERS ||--o{ AVALIACOES : vota
-
-    PROJETOS {
-        uuid id PK
-        texto instituicao
-        texto titulo
-        texto descricao "até 200 caracteres"
-        lista autores
-        int ano
-        texto area "8 grandes áreas do CNPq"
-        texto subarea "uma das subáreas com disciplinas no catálogo atual da UFSM"
-        uuid cadeiraId FK
-        uuid userId FK
-        texto link
-        texto tipo "projeto, trabalho, prova ou material"
-        texto curso
-        texto imagemURL
-        texto plataforma
-        data criadoEm
-    }
-    CADEIRAS {
-        uuid id PK
-        texto nome
-    }
-    USERS {
-        uuid id PK
-        texto nome
-        texto curso
-    }
-    AVALIACOES {
-        uuid id PK
-        uuid projetoId FK
-        uuid userId FK
-        int nota "1 a 5"
-    }
-```
-
-Versão em imagem para a apresentação: [`docs/banco-de-dados.png`](../../docs/banco-de-dados.png).
-
-| No rascunho | No banco | Observação |
+| colecao | Campos | Observação |
 |---|---|---|
-| projetos: inst, ID, titulo, desc, autor, ano, area, link | `instituicao`, `id`, `titulo`, `descricao`, `autores`, `ano`, `area`, `link` | `autores` é uma lista (trabalhos em grupo) |
-| (nova) | `subarea` | subárea disponível no catálogo atual da UFSM, sempre gravada com a grafia oficial (`GET /hub/subareas`) |
-| projetos: cadeira | `cadeiraId` → **cadeiras** | a cadeira (a “matéria” do app) é criada sozinha na 1ª publicação, sem duplicar “Higiene ocupacional” e “higiene ocupacional” |
-| projetos: user | `userId` → **users** | é preenchido pelo servidor e **nunca sai nas respostas** (veja Segurança) |
-| projetos: avaliação | `nota` e `quant` em cada projeto | calculados a partir da tabela avaliações |
-| avaliações: ID, nota, quant | uma linha **por voto**: `id`, `projetoId`, `userId`, `nota` | permite **um voto por pessoa** e trocar a nota depois; `nota` (média) e `quant` (total de votos) saem dessas linhas |
-| cadeiras: ID, nome | `id`, `nome` | |
-| users: ID, nome | `id`, `nome`, `curso` | o curso aparece no perfil do app |
+| `publicacao` | `_id`, `tipo`, `titulo`, `descricao`, `autores`, `ano`, `area`, `subarea`, `disciplina`, `curso`, `instituicao`, `link`, `plataforma`, `imagemLink`, `usuarioId`, `criadoEm` | `_id` no formato UUID. `usuarioId` nunca sai nas respostas. |
+| `avaliacao` | `_id` = `avaliacao:<publicação>:<usuário>`, `publicacaoId`, `usuarioId`, `nota` | O `_id` fixo garante **uma avaliação por pessoa**; avaliar de novo troca a nota. |
+| `usuario` | `_id`, `nome`, `curso`, `criadoEm` | O `_id` é a chave do aparelho (cabeçalho `X-Hub-Usuario`). |
 
-Para ver as tabelas no editor: barra lateral › **Context Data** › **Global** › atualizar › `hub_db`.
+- **Média e total:** `media` e `totalAvaliacoes` são calculados a cada consulta, a partir das avaliações. As publicações de exemplo trazem `avaliacoesBase` (soma e total), que entram na conta junto com as avaliações reais. Assim os exemplos mostram as mesmas médias do app.
+- **Documentos sem `colecao`:** documentos do rascunho da equipe (com `cadeira`, sem `colecao`) e outros testes não aparecem no app.
+- **Índices:** as consultas não usam `sort`, que no Cloudant exige um índice criado antes. A ordem é feita no Node-RED. Todas as consultas informam o limite, porque sem ele o Cloudant devolve só 25 documentos.
+
+Diagrama para a apresentação: [`docs/banco-de-dados.png`](../../docs/banco-de-dados.png).
+
+| No rascunho da equipe | Agora |
+|---|---|
+| `GETprojetos`, `POSTprojeto`, `UPDATEprojeto`, `DELETEprojeto` | `GETpublicacoes`, `POSTpublicacao`, `UPDATEpublicacao`, `DELETEpublicacao` |
+| filtro `cadeira` | filtro `disciplina` (`cadeira` continua aceito) |
+| `sort: [{ ano: "desc" }]` na consulta | ordem feita no Node-RED (sem índice no Cloudant) |
+| `limit: 100` | limite de 5.000 por consulta |
 
 ---
 
@@ -147,24 +97,30 @@ Todas as respostas são JSON. Os erros vêm como `{ "erro": "…", "detalhes": [
 
 | Método | Rota | Para quê | Precisa de |
 |---|---|---|---|
-| GET | `/hub/status` | Testar a conexão e ver os totais | — |
-| GET | `/hub/projetos` | Listar (filtros abaixo) | — |
-| GET | `/hub/projetos/:id` | Um projeto | — |
-| POST | `/hub/projetos` | Publicar | `X-Hub-User` |
-| DELETE | `/hub/projetos/:id` | Remover (apaga também os votos) | quem publicou ou `X-Hub-Admin` |
-| POST | `/hub/avaliacoes` | Dar nota de 1 a 5; votar de novo troca a nota | `X-Hub-User` |
-| GET | `/hub/subareas` | Subáreas de cada área (tabela do CNPq) | — |
-| GET | `/hub/cadeiras` | Cadeiras com o total de publicações | — |
-| POST | `/hub/cadeiras` | Cadastrar cadeira | `X-Hub-Admin` |
-| POST | `/hub/users` | Cadastrar usuário (devolve o `id`) | — |
-| GET | `/hub/perfil` | Ver o próprio usuário | `X-Hub-User` |
-| PUT | `/hub/perfil` | Trocar nome e curso | `X-Hub-User` |
+| GET | `/GETstatus` | Testar a conexão e ver os totais | — |
+| GET | `/GETpublicacoes` | Listar (filtros abaixo) | — |
+| POST | `/POSTpublicacao` | Publicar | `X-Hub-Usuario` |
+| PUT | `/UPDATEpublicacao?id=…` | Alterar campos de uma publicação | quem publicou ou `X-Hub-Moderacao` |
+| DELETE | `/DELETEpublicacao?id=…` | Remover | quem publicou ou `X-Hub-Moderacao` |
+| POST | `/POSTavaliacao` | Dar nota de 1 a 5; avaliar de novo troca a nota | `X-Hub-Usuario` |
+| POST | `/POSTusuario` | Cadastrar usuário (devolve o `id`) | — |
+| GET | `/GETusuario` | Ver o próprio usuário | `X-Hub-Usuario` |
+| PUT | `/UPDATEusuario` | Trocar nome e curso | `X-Hub-Usuario` |
+| GET | `/GETdisciplinas` | Disciplinas usadas, com o total de publicações | — |
+| GET | `/GETsubareas` | Subáreas de cada área (tabela do CNPq) | — |
 
-**Filtros de `GET /hub/projetos`:** `tipo`, `ano`, `area`, `subarea`, `curso`, `cadeira`, `autor`, `q` (texto livre, sem diferenciar acentos), `ordem=nota` e `limite` (padrão 500).
+**Filtros de `GET /GETpublicacoes`** (todos opcionais):
+- `tipo`, `ano`, `area`, `subarea`, `curso`;
+- `disciplina` (ou `cadeira`), `titulo` e `autor`: trechos do nome, sem diferenciar acentos;
+- `q`: texto livre;
+- `ordem=media`: mais bem avaliadas primeiro;
+- `limite`.
 
-**Ao publicar:** `area` é obrigatória e `subarea` precisa ser uma das subáreas dela (sem diferenciar acentos e maiúsculas; o banco guarda a grafia oficial). A `subarea` só é opcional para não recusar versões antigas do app. A `cadeira` (matéria) aceita de 2 a 150 caracteres, porque alguns nomes de disciplinas da UFSM são longos.
+**Ao publicar:**
+- `area` é obrigatória, e `subarea` precisa ser uma das subáreas dela. A comparação não diferencia acentos nem maiúsculas, e o banco guarda a grafia oficial.
+- `disciplina` aceita de 2 a 150 caracteres.
 
-Cada projeto vem assim:
+Cada publicação vem assim:
 
 ```json
 {
@@ -172,26 +128,25 @@ Cada projeto vem assim:
   "tipo": "projeto",
   "titulo": "Monitor IoT de ruído nas oficinas do CTISM",
   "descricao": "Protótipo com ESP32 e sensor de som…",
-  "imagemURL": "asset://capa-monitor-ruido",
+  "imagemLink": "asset://imagem-monitor-ruido",
   "link": "https://example.com/hub-academico/monitor-ruido",
   "plataforma": "linkedin",
   "area": "engenharias",
   "subarea": "Engenharia de Produção",
-  "cadeira": "Higiene Ocupacional",
-  "cadeiraId": "598191FC-98A7-52E0-BDA9-DB206348D7FA",
+  "disciplina": "Higiene Ocupacional",
   "curso": "Técnico em Segurança do Trabalho",
   "instituicao": "CTISM – UFSM",
   "ano": 2026,
   "autores": ["Ana Clara Machado", "Lucas Ferreira"],
-  "nota": 4.81,
-  "quant": 37,
+  "media": 4.81,
+  "totalAvaliacoes": 37,
   "minhaNota": null,
   "meu": false,
-  "criadoEm": "2026-11-07T16:02:00Z"
+  "criadoEm": "2026-11-09T16:02:00Z"
 }
 ```
 
-`minhaNota` e `meu` só são preenchidos quando a requisição traz o cabeçalho `X-Hub-User`. Os valores aceitos em `area` e `plataforma` são os mesmos do app (`AreaConhecimento` e `Plataforma` em `Producao.swift`); as subáreas de cada área estão em `GET /hub/subareas` e em `CatalogoAreas.swift`.
+`minhaNota` e `meu` só são preenchidos quando a requisição traz o cabeçalho `X-Hub-Usuario`.
 
 ### Exemplos com curl
 
@@ -199,64 +154,93 @@ Cada projeto vem assim:
 BASE=http://localhost:1880
 
 # 1. Cadastrar um usuário e guardar o "id" da resposta
-curl -s -X POST $BASE/hub/users -H 'Content-Type: application/json' \
+curl -s -X POST $BASE/POSTusuario -H 'Content-Type: application/json' \
   -d '{"nome":"Ana Clara Machado","curso":"Técnico em Segurança do Trabalho"}'
 USUARIO=cole-aqui-o-id
 
 # 2. Publicar
-curl -s -X POST $BASE/hub/projetos -H 'Content-Type: application/json' -H "X-Hub-User: $USUARIO" \
+curl -s -X POST $BASE/POSTpublicacao -H 'Content-Type: application/json' -H "X-Hub-Usuario: $USUARIO" \
   -d '{"tipo":"projeto","titulo":"Sensor de gás com alerta no celular",
        "descricao":"Protótipo com sensor MQ-2 e ESP32 que avisa no celular quando detecta vazamento de gás.",
-       "area":"engenharias","subarea":"Engenharia Elétrica","cadeira":"Sistemas Embarcados","ano":2026,
+       "area":"engenharias","subarea":"Engenharia Elétrica","disciplina":"Sistemas Embarcados","ano":2026,
        "curso":"Técnico em Segurança do Trabalho","autores":["Ana Clara Machado"],
        "link":"https://www.linkedin.com/posts/exemplo","plataforma":"linkedin"}'
 
-# 3. Avaliar (troque PROJETO pelo id de um projeto)
-curl -s -X POST $BASE/hub/avaliacoes -H 'Content-Type: application/json' -H "X-Hub-User: $USUARIO" \
-  -d '{"projetoId":"PROJETO","nota":5}'
+# 3. Avaliar (troque PUBLICACAO pelo id de uma publicação)
+curl -s -X POST $BASE/POSTavaliacao -H 'Content-Type: application/json' -H "X-Hub-Usuario: $USUARIO" \
+  -d '{"publicacaoId":"PUBLICACAO","nota":5}'
 
 # 4. Listar as provas, das mais bem avaliadas para as menos
-curl -s "$BASE/hub/projetos?tipo=prova&ordem=nota"
+curl -s "$BASE/GETpublicacoes?tipo=prova&ordem=media"
 
-# 5. Publicações de uma subárea
-curl -s "$BASE/hub/projetos?subarea=Engenharia%20de%20Produ%C3%A7%C3%A3o"
+# 5. Alterar o título da própria publicação
+curl -s -X PUT "$BASE/UPDATEpublicacao?id=PUBLICACAO" -H 'Content-Type: application/json' -H "X-Hub-Usuario: $USUARIO" \
+  -d '{"titulo":"Sensor de gás com alerta no celular (versão 2)"}'
 ```
 
 ### Botões do fluxo (nós inject)
 
 | Botão | O que faz |
 |---|---|
-| **Ao implantar: cria o banco (1ª vez)** | Roda sozinho a cada Deploy, mas só cria os exemplos se o banco nunca foi criado. |
-| **Restaurar exemplos (mantém usuários)** | Apaga projetos, cadeiras e avaliações e recria os 12 exemplos. Útil antes de uma apresentação. |
-| **Remover só os exemplos** | Tira as publicações de exemplo e os votos delas, mantendo o que a turma publicou. Use ao começar para valer. |
+| **Ao implantar: testa a conexão** | Roda sozinho a cada Deploy e mostra os totais na depuração. Se o banco não tiver nenhuma publicação, cria os exemplos. |
+| **Criar ou restaurar exemplos** | Grava de novo as 12 publicações de exemplo, com as médias originais. Grava 4 por segundo, por causa do limite de gravações do plano Lite do Cloudant. |
+| **Remover exemplos** | Apaga só as publicações de exemplo; as publicadas pela turma ficam. Com o banco sem nenhuma publicação, os exemplos voltam no próximo Deploy. |
+
+---
+
+## Erros
+
+Qualquer erro do Cloudant ou do fluxo cai no nó **catch**. O app recebe uma resposta JSON, nunca uma requisição sem resposta. O detalhe também aparece na depuração.
+
+| Situação | Resposta | Mensagem no app |
+|---|---|---|
+| API key errada ou sem permissão | 502 | “O Cloudant recusou o acesso. Confira a API key…” |
+| Limite de requisições do plano Lite | 503 | “O Cloudant pediu para esperar… Tente de novo em alguns segundos.” |
+| Duas gravações ao mesmo tempo | 409 | “Outra pessoa alterou este registro ao mesmo tempo. Tente de novo.” |
+| Computador do Node-RED sem internet | 502 | “Sem conexão com o Cloudant…” |
+
+O plano Lite do Cloudant limita leituras, gravações e consultas por segundo. Cada atualização da lista no app faz 2 consultas, e publicar ou avaliar faz 2 consultas e 1 gravação. Isso dá folga para a turma usar o app ao mesmo tempo.
 
 ---
 
 ## Segurança e privacidade
 
-- **Quem é quem:** não há login nesta versão. O app cadastra o perfil em `POST /hub/users` e guarda o `id` recebido, que funciona como a chave daquele aparelho no servidor. Por isso o `id` dos usuários **nunca aparece nas listas**: no lugar dele vai o campo `meu`. O passo seguinte é o login institucional da UFSM.
-- **Moderação:** defina a variável de ambiente `HUB_ADMIN_TOKEN` com uma chave longa ao iniciar o Node-RED (`HUB_ADMIN_TOKEN=uma-chave-longa node-red`) e envie o mesmo valor no cabeçalho `X-Hub-Admin`. Sem a variável, a moderação fica desligada.
-- **Editor protegido:** em uma rede compartilhada, ative `adminAuth` no `settings.js` para que ninguém altere o fluxo.
-- **HTTPS:** o `Config/HubAcademico-Info.plist` libera `http://` (exceção do App Transport Security) para o laboratório. Em produção, use HTTPS e retire essa exceção.
-- **LGPD:** o banco guarda nome, curso e as autorias informadas. Avisem os(as) estudantes sobre isso no app e combinem com a coordenação quem atende pedidos de remoção (a rota `DELETE` já existe).
-- **Limites:** não há limite de requisições por aparelho. Para abrir o serviço fora do laboratório, coloquem o Node-RED atrás de um proxy com limite de taxa.
+- **API key:** fica só no Node-RED, no arquivo de credenciais (`flows_cred.json`), e nunca vai para o app nem para o fluxo exportado. Não publiquem esse arquivo no GitHub.
+- **Quem é quem:** não há login nesta versão. O app cadastra o usuário em `POST /POSTusuario` e guarda o `id` recebido, que funciona como a chave daquele aparelho. Por isso o `id` dos usuários **nunca aparece nas listas**: no lugar dele vai o campo `meu`.
+- **Moderação:** defina a variável de ambiente `HUB_MODERACAO_TOKEN` com uma chave longa ao iniciar o Node-RED (`HUB_MODERACAO_TOKEN=uma-chave-longa node-red`) e envie o mesmo valor no cabeçalho `X-Hub-Moderacao`. Sem a variável, a moderação fica desligada.
+- **Editor protegido:** em uma rede compartilhada, ative a senha do editor no `settings.js` (opção `adminAuth` do Node-RED) para que ninguém altere o fluxo.
+- **HTTPS:** o `Config/HubAcademico-Info.plist` libera `http://` para o laboratório. Em produção, use HTTPS e retire essa exceção.
+- **LGPD:** o banco guarda nome, curso e as autorias informadas. Avisem os(as) estudantes sobre isso no app e combinem com a coordenação quem atende pedidos de remoção (a rota `DELETEpublicacao` já existe).
 
 ---
 
 ## Testes
 
-Os testes leem o `hub-academico-flows.json`, conferem a estrutura (ids, ligações, uma rota para cada `case`) e executam o código dos nós `function` do mesmo jeito que o Node-RED, simulando o contexto global gravado em arquivo e as requisições HTTP:
-
 ```bash
 node backend/node-red/testes/testar-fluxo.js
 ```
 
-**Ao alterar o código:** edite `src/api.js` ou `src/seed.js`, rode `node backend/node-red/montar-fluxo.js` (copia o código para dentro do fluxo) e reimporte o fluxo no Node-RED. O teste avisa se o código do fluxo e o de `src/` ficarem diferentes. Uma rota nova também precisa de um nó `http in` ligado ao nó **API** (o `montar-fluxo.js` avisa quando falta).
+O teste roda o fluxo como o Node-RED, sem precisar dele nem do Cloudant:
+- entrega as mensagens pelas ligações;
+- executa o código dos nós **function**;
+- manda os erros para o nó **catch**;
+- responde pelos nós **http response**.
 
-A lista `SUBAREAS` de `src/api.js` é gerada junto com o catálogo do app (`python3 ferramentas/catalogo/gerar_catalogo.py`, na raiz do repositório); não a edite à mão.
+Os nós **cloudantplus** usam um Cloudant em memória, com as mesmas regras:
+- limite padrão de 25 documentos por consulta;
+- `sort` só com índice;
+- conflito ao gravar sem a `_rev`;
+- `_id` e `_rev` obrigatórios para apagar.
 
----
+A consulta é testada nas duas formas de resposta do nó: `{ docs: [...] }` e a lista de documentos. O teste também confere se alguma requisição ficou sem resposta.
 
-## Se o curso pedir Cloudant (IBM Cloud)
+**Ao alterar o código:**
+1. Edite os arquivos em `src/`.
+2. Rode `node backend/node-red/montar-fluxo.js`.
+3. Reimporte o fluxo no Node-RED.
 
-O fluxo usa o contexto do Node-RED para funcionar em qualquer instalação sem pacotes extras. Para usar o IBM Cloudant, mantenha as rotas e as validações e troque só o acesso ao banco: cada tabela vira um banco do Cloudant (`projetos`, `cadeiras`, `users`, `avaliacoes`), cada linha vira um documento com `_id` igual ao `id`, e as leituras e gravações de `global.get('hub_db')` / `global.set(...)` passam a ser feitas pelos nós do Cloudant antes e depois do nó **API**. As respostas para o app continuam iguais, então o app não muda.
+O teste avisa se o `hub-academico-flows.json` estiver desatualizado em relação a `src/`.
+
+Cada nó **function** recebe só as declarações de `src/comum.js` que usa (e as que elas usam). Assim, o fluxo fica com cerca de 180 KB, e cada nó mostra no editor só o código que importa. Escreva cada nova declaração começando na coluna 0, com o comentário logo acima dela.
+
+A lista `SUBAREAS` de `src/comum.js` é gerada junto com o catálogo do app: rode `python3 ferramentas/catalogo/gerar_catalogo.py` na raiz do repositório. Não a edite à mão.

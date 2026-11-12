@@ -13,15 +13,13 @@ struct CabecalhoInstitucional: View {
                 Rectangle()
                     .fill(Color.white.opacity(0.28))
                     .frame(width: 1, height: 34)
-                VStack(alignment: .leading) {
-                    Text("Hub Acadêmico")
-                        .font(Tipografia.fonteFixa(23, .medium))
-                        .tracking(0.2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .foregroundStyle(.white)
-                .accessibilityElement(children: .combine)
+                Text("Hub Acadêmico")
+                    .font(Tipografia.fonteFixa(24, .medium))
+                    .tracking(0.2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .foregroundStyle(.white)
+                    .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
             }
             .frame(height: 52)
@@ -172,8 +170,7 @@ struct CampoBusca: View {
                 .accessibilityLabel("Buscar")
             }
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 5)
+        .padding(.horizontal, 14)
         .frame(height: 40)
         .background(Color.white, in: Capsule())
         .overlay {

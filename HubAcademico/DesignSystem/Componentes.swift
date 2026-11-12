@@ -26,7 +26,7 @@ struct SecaoTitulo: View {
 
 // MARK: - Chips e pílulas
 
-/// Etiqueta arredondada (tipo da publicação, área, matéria, ano…).
+/// Etiqueta arredondada (tipo da publicação, área, disciplina, ano…).
 struct Chip: View {
     enum Estilo {
         case tipo, destaque, neutro
@@ -114,20 +114,20 @@ struct Checkbox: View {
     }
 }
 
-/// Exibe uma nota de 0 a 5 com preenchimento parcial da última estrela.
+/// Exibe a média de 0 a 5 com preenchimento parcial da última estrela.
 struct Estrelas: View {
-    let nota: Double
+    let media: Double
     var tamanho: CGFloat = 12
     var espaco: CGFloat = 2
 
     var body: some View {
         HStack(spacing: espaco) {
             ForEach(0..<5, id: \.self) { indice in
-                estrela(preenchimento: min(max(nota - Double(indice), 0), 1))
+                estrela(preenchimento: min(max(media - Double(indice), 0), 1))
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Nota \(nota.notaFormatada) de 5")
+        .accessibilityLabel("Média \(media.mediaFormatada) de 5")
     }
 
     private func estrela(preenchimento: Double) -> some View {
@@ -179,7 +179,7 @@ struct EstiloBotaoSecundario: ButtonStyle {
 
 // MARK: - Campos de formulário
 
-/// Caixa de campo com rótulo flutuante (padrão da tela de cadastro).
+/// Caixa de campo com rótulo flutuante (padrão da tela Publicar).
 struct CampoRotulado<Conteudo: View>: View {
     let rotulo: String
     var obrigatorio = false
@@ -270,41 +270,41 @@ struct CampoTextoCompacto: View {
 
 // MARK: - Imagens
 
-/// Imagem da publicação. Aceita URLs da web (carregadas com AsyncImage)
+/// Imagem da publicação. Aceita links da web (carregados com AsyncImage)
 /// e imagens do próprio app no formato `asset://nome-da-imagem` (dados de exemplo).
-struct CapaView: View {
-    let url: URL?
+struct ImagemView: View {
+    let link: URL?
 
     var body: some View {
         Group {
-            if let url, url.scheme == "asset", let nome = url.host() {
+            if let link, link.scheme == "asset", let nome = link.host() {
                 Image(nome)
                     .resizable()
                     .scaledToFill()
-            } else if let url {
-                AsyncImage(url: url) { fase in
+            } else if let link {
+                AsyncImage(url: link) { fase in
                     switch fase {
                     case .success(let imagem):
                         imagem
                             .resizable()
                             .scaledToFill()
                     case .failure:
-                        PlaceholderCapa(icone: "photo", texto: "Imagem indisponível")
+                        PlaceholderImagem(icone: "photo", texto: "Imagem indisponível")
                     default:
-                        PlaceholderCapa(icone: nil, texto: nil)
+                        PlaceholderImagem(icone: nil, texto: nil)
                             .overlay {
                                 ProgressView().tint(.white)
                             }
                     }
                 }
             } else {
-                PlaceholderCapa(icone: "photo", texto: nil)
+                PlaceholderImagem(icone: "photo", texto: nil)
             }
         }
     }
 }
 
-struct PlaceholderCapa: View {
+struct PlaceholderImagem: View {
     let icone: String?
     let texto: String?
 
